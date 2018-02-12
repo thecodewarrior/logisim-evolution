@@ -63,6 +63,8 @@ package/bundles/
 .settings/
 .project
 .classpath
+.idea/
+*.iml
 
 
 # Simulation files and folders
