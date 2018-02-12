@@ -32,6 +32,7 @@ package com.cburch.draw.model;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -262,6 +263,13 @@ public abstract class AbstractCanvasObject implements AttributeSet,
 	public abstract Element toSvgElement(Document doc);
 
 	public abstract void translate(int dx, int dy);
+
+	public void addTranslateSnapHandles(List<Location> locations) {
+	    List<Handle> handles = this.getHandles(null);
+		for (Handle handle : handles) {
+			locations.add(Location.create(handle.getX(), handle.getY()));
+		}
+	}
 
 	protected abstract void updateValue(Attribute<?> attr, Object value);
 

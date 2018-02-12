@@ -188,4 +188,13 @@ public class Text extends AbstractCanvasObject {
 			label.setHorizontalAlignment(intVal.intValue());
 		}
 	}
+
+	@Override
+	public void addTranslateSnapHandles(List<Location> locations) {
+		int x = label.getX();
+		int y = label.getY();
+		int y2 = label.getBounds().getCenterY();
+		locations.add(Location.create(x, y));
+		locations.add(Location.create(x, y2));
+	}
 }

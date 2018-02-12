@@ -78,4 +78,6 @@ public interface CanvasObject {
 	public <V> void setValue(Attribute<V> attr, V value);
 
 	public void translate(int dx, int dy);
+
+	public void addTranslateSnapHandles(List<Location> locations);
 }

@@ -53,6 +53,7 @@ import com.cburch.draw.model.CanvasModel;
 import com.cburch.draw.model.CanvasObject;
 import com.cburch.draw.model.Handle;
 import com.cburch.draw.model.HandleGesture;
+import com.cburch.logisim.circuit.appear.AppearanceElement;
 import com.cburch.logisim.data.Attribute;
 import com.cburch.logisim.data.Bounds;
 import com.cburch.logisim.data.Location;
@@ -502,20 +503,25 @@ public class SelectTool extends AbstractTool {
 			break;
 		case MOVE_ALL:
 			if (ctrl) {
-				int minX = Integer.MAX_VALUE;
-				int minY = Integer.MAX_VALUE;
+				int minDx = dx;
+				int minDy = dy;
+				int minDistSq = Integer.MAX_VALUE;
+				List<Location> locations = new ArrayList<>();
 				for (CanvasObject o : canvas.getSelection().getSelected()) {
-					for (Handle handle : o.getHandles(null)) {
-						int x = handle.getX();
-						int y = handle.getY();
-						if (x < minX)
-							minX = x;
-						if (y < minY)
-							minY = y;
+					o.addTranslateSnapHandles(locations);
+				}
+				for (Location loc : locations) {
+					int snappedDx = canvas.snapX(loc.getX() + dx) - loc.getX();
+					int snappedDy = canvas.snapY(loc.getY() + dy) - loc.getY();
+					int snappedDistSq = snappedDx * snappedDx + snappedDy * snappedDy;
+					if (snappedDistSq < minDistSq) {
+						minDx = snappedDx;
+						minDy = snappedDy;
+						minDistSq = snappedDistSq;
 					}
 				}
-				dx = canvas.snapX(minX + dx) - minX;
-				dy = canvas.snapY(minY + dy) - minY;
+				dx = minDx;
+				dy = minDy;
 			}
 			if (shift) {
 				if (Math.abs(dx) > Math.abs(dy)) {

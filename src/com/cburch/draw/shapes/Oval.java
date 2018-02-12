@@ -112,4 +112,10 @@ public class Oval extends Rectangular {
 	public Element toSvgElement(Document doc) {
 		return SvgCreator.createOval(doc, this);
 	}
+
+	@Override
+	public void addTranslateSnapHandles(List<Location> locations) {
+		super.addTranslateSnapHandles(locations);
+		locations.add(Location.create(this.getX()+this.getWidth()/2, this.getY()+this.getHeight()/2));
+	}
 }
