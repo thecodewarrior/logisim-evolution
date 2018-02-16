@@ -92,6 +92,9 @@ public class Io extends Library {
 			new FactoryDescription("DotMatrix",
 					Strings.getter("dotMatrixComponent"), "dotmat.gif",
 					"DotMatrix"),
+			new FactoryDescription("Display",
+					Strings.getter("displayComponent"), "dotmat.gif",
+					"Display"),
 			new FactoryDescription("TTY", Strings.getter("ttyComponent"),
 					"tty.gif", "Tty"), };
 

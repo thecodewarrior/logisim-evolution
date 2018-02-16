@@ -47,6 +47,7 @@ import java.util.WeakHashMap;
 
 import javax.swing.JOptionPane;
 
+import com.cburch.logisim.instance.ITickingInstanceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -236,6 +237,7 @@ public class Circuit {
 																	// wires
 	CircuitWires wires = new CircuitWires();
 	private ArrayList<Component> clocks = new ArrayList<Component>();
+	private ArrayList<Component> ticking = new ArrayList<Component>();
 	private CircuitLocker locker;
 
 	final static Logger logger = LoggerFactory.getLogger(Circuit.class);
@@ -630,6 +632,10 @@ public class Circuit {
 		return clocks;
 	}
 
+	public ArrayList<Component> getTicking() {
+		return ticking;
+	}
+
 	private Set<Component> getComponents() {
 		return CollectionUtil.createUnmodifiableSetUnion(comps,
 				wires.getWires());
@@ -745,6 +751,8 @@ public class Circuit {
 			ComponentFactory factory = c.getFactory();
 			if (factory instanceof Clock) {
 				clocks.add(c);
+			} else if (factory instanceof ITickingInstanceFactory) {
+				ticking.add(c);
 			} else if (factory instanceof SubcircuitFactory) {
 				SubcircuitFactory subcirc = (SubcircuitFactory) factory;
 				subcirc.getSubcircuit().circuitsUsingThis.put(c, this);
@@ -762,6 +770,7 @@ public class Circuit {
 		comps = new HashSet<Component>();
 		wires = new CircuitWires();
 		clocks.clear();
+		ticking.clear();
 		MyNetList.clear();
 		Annotated = false;
 		for (Component comp : oldComps) {
@@ -788,6 +797,8 @@ public class Circuit {
 			ComponentFactory factory = c.getFactory();
 			if (factory instanceof Clock) {
 				clocks.remove(c);
+			} else if (factory instanceof ITickingInstanceFactory) {
+				ticking.add(c);
 			} else if (factory instanceof SubcircuitFactory) {
 				SubcircuitFactory subcirc = (SubcircuitFactory) factory;
 				subcirc.getSubcircuit().circuitsUsingThis.remove(c);

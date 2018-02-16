@@ -581,6 +581,14 @@ public class Value {
 		return value;
 	}
 
+	public long toLongValue() {
+		if (error != 0)
+			return -1;
+		if (unknown != 0)
+			return -1;
+		return value & 0xFFFFFFFFL;
+	}
+
 	public String toOctalString() {
 		if (width <= 1) {
 			return toString();

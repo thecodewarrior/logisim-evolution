@@ -46,10 +46,7 @@ import com.cburch.logisim.comp.ComponentState;
 import com.cburch.logisim.data.BitWidth;
 import com.cburch.logisim.data.Location;
 import com.cburch.logisim.data.Value;
-import com.cburch.logisim.instance.Instance;
-import com.cburch.logisim.instance.InstanceData;
-import com.cburch.logisim.instance.InstanceFactory;
-import com.cburch.logisim.instance.InstanceState;
+import com.cburch.logisim.instance.*;
 import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.std.wiring.Clock;
 import com.cburch.logisim.std.wiring.Pin;
@@ -515,6 +512,10 @@ public class CircuitState implements InstanceData {
 		boolean ret = false;
 		for (Component clock : circuit.getClocks()) {
 			ret |= Clock.tick(this, ticks, clock);
+		}
+
+		for (Component ticking : circuit.getTicking()) {
+			ret |= ((ITickingInstanceFactory)ticking.getFactory()).tick(getInstanceState(ticking));
 		}
 
 		CircuitState[] subs = new CircuitState[substates.size()];
