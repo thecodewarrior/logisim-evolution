@@ -45,7 +45,7 @@ import java.util.Objects;
 
 public class Display extends InstanceFactory implements ITickingInstanceFactory {
 	private static class State extends ClockState implements InstanceData, Cloneable {
-	    private static int PIXELS_PER_UNIT = 4;
+	    private static int PIXELS_PER_UNIT = 3;
 
 		private MemoryImageSource imageSource;
 		private Image drawingImage;
@@ -56,7 +56,6 @@ public class Display extends InstanceFactory implements ITickingInstanceFactory 
 
 		private int rows;
 		private int cols;
-		private Color bgColor;
 		private int fadeSpeed;
 
 		public State(int rows, int cols) {
@@ -78,6 +77,7 @@ public class Display extends InstanceFactory implements ITickingInstanceFactory 
 
 		private void drawLine(int x1, int y1, int x2, int y2, int brightness) {
 			graphics.setColor(new Color(brightness, brightness, brightness));
+			GraphicsUtil.switchToWidth(graphics, 1);
 		    graphics.drawLine(x1, y1, x2, y2);
 		}
 
@@ -104,7 +104,6 @@ public class Display extends InstanceFactory implements ITickingInstanceFactory 
 				Graphics2D graphics2D = (Graphics2D)image.getGraphics();
 				this.graphics = graphics2D;
 				graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-				GraphicsUtil.switchToWidth(graphics, 1);
 
 				imageSource = new MemoryImageSource(cols*PIXELS_PER_UNIT, rows*PIXELS_PER_UNIT, IndexColorModel.getRGBdefault(), data, 0, cols*PIXELS_PER_UNIT);
 				imageSource.setAnimated(true);

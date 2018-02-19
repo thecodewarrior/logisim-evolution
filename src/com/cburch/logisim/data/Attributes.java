@@ -181,6 +181,17 @@ public class Attributes {
 		}
 	}
 
+	private static class FloatAttribute extends Attribute<Float> {
+		private FloatAttribute(String name, StringGetter disp) {
+			super(name, disp);
+		}
+
+		@Override
+		public Float parse(String value) {
+			return Float.valueOf(value);
+		}
+	}
+
 	private static class FontAttribute extends Attribute<Font> {
 		private FontAttribute(String name, StringGetter disp) {
 			super(name, disp);
@@ -472,6 +483,10 @@ public class Attributes {
 
 	public static Attribute<Double> forDouble(String name, StringGetter disp) {
 		return new DoubleAttribute(name, disp);
+	}
+
+	public static Attribute<Float> forFloat(String name, StringGetter disp) {
+		return new FloatAttribute(name, disp);
 	}
 
 	public static Attribute<Font> forFont(String name) {

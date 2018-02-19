@@ -111,6 +111,8 @@ public class BitWidth implements Comparable<BitWidth> {
 
 	public static final BitWidth ONE = new BitWidth(1);
 
+	public static final BitWidth FLOAT = new BitWidth(32);
+
 	private static BitWidth[] prefab = null;
 
 	final int width;

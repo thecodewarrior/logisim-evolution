@@ -45,6 +45,8 @@ public interface StdAttr {
 
 	public static final Attribute<BitWidth> WIDTH = Attributes.forBitWidth(
 			"width", Strings.getter("stdDataWidthAttr"));
+	public static final Attribute<Boolean> FLOATING_POINT = Attributes
+			.forBoolean("floatingpoint", Strings.getter("stdDataFloatingPoint"));
 
 	public static final AttributeOption TRIG_RISING = new AttributeOption(
 			"rising", Strings.getter("stdTriggerRising"));

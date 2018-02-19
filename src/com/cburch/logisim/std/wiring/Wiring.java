@@ -56,7 +56,7 @@ public class Wiring extends Library {
 			new AddTool(Pin.FACTORY), new AddTool(Probe.FACTORY),
 			new AddTool(Tunnel.FACTORY), new AddTool(PullResistor.FACTORY),
 			new AddTool(Clock.FACTORY), new AddTool(PowerOnReset.FACTORY) , 
-			new AddTool(Constant.FACTORY), };
+			new AddTool(Constant.FACTORY), new AddTool(FloatConstant.FACTORY) };
 
 	private static FactoryDescription[] DESCRIPTIONS = {
 			new FactoryDescription("Power", Strings.getter("powerComponent"),

@@ -32,6 +32,8 @@ package com.cburch.logisim.std.arith;
 
 import java.util.List;
 
+import com.cburch.logisim.data.Attribute;
+import com.cburch.logisim.data.Attributes;
 import com.cburch.logisim.tools.FactoryDescription;
 import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.tools.Tool;
@@ -63,7 +65,34 @@ public class Arithmetic extends Library {
 					"BitAdder"),
 			new FactoryDescription("BitFinder",
 					Strings.getter("bitFinderComponent"), "bitfindr.gif",
-					"BitFinder"),};
+					"BitFinder"),
+
+			new FactoryDescription("FloatAdder",
+					Strings.getter("floatAdderComponent"), "adder.gif",
+					"FloatAdder"),
+			new FactoryDescription("FloatSubtractor",
+					Strings.getter("floatSubtractorComponent"), "subtractor.gif",
+					"FloatSubtractor"),
+			new FactoryDescription("FloatMultiplier",
+					Strings.getter("floatMultiplierComponent"), "multiplier.gif",
+					"FloatMultiplier"),
+			new FactoryDescription("FloatDivider",
+					Strings.getter("floatDividerComponent"), "divider.gif",
+					"FloatDivider"),
+			new FactoryDescription("FloatNegator",
+					Strings.getter("floatNegatorComponent"), "negator.gif",
+					"FloatNegator"),
+
+			new FactoryDescription("FloatExtractor",
+					Strings.getter("floatExtractorComponent"), "extractor.gif",
+					"FloatExtractor"),
+			new FactoryDescription("FloatCombiner",
+					Strings.getter("floatCombinerComponent"), "combiner.gif",
+					"FloatCombiner"),
+			new FactoryDescription("FloatConverter",
+					Strings.getter("floatConverterComponent"), "floatconverer.gif",
+					"FloatConverter"),
+	};
 
 	private List<Tool> tools = null;
 
