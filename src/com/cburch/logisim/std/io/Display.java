@@ -171,9 +171,9 @@ public class Display extends InstanceFactory implements ITickingInstanceFactory 
 	}
 
 	private static final Attribute<Integer> ATTR_MATRIX_COLS = Attributes
-			.forIntegerRange("matrixcols", Strings.getter("ioMatrixCols"), 1, 32);
+			.forIntegerRange("matrixcols", Strings.getter("ioMatrixCols"), 1, 128);
 	private static final Attribute<Integer> ATTR_MATRIX_ROWS = Attributes
-			.forIntegerRange("matrixrows", Strings.getter("ioMatrixRows"), 1, 32);
+			.forIntegerRange("matrixrows", Strings.getter("ioMatrixRows"), 1, 128);
 	private static final Attribute<Integer> ATTR_FADE_SPEED = Attributes
 			.forIntegerRange("fadespeed", Strings.getter("ioFadeSpeed"), 0, 255);
 

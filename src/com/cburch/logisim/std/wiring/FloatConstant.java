@@ -147,7 +147,7 @@ public class FloatConstant extends InstanceFactory {
 			String number = vStr.substring(0, vStr.indexOf("e"));
 			vStr = number.substring(0, Math.min(number.length(), width-exponent.length())) + exponent;
 		}
-		vStr = vStr.replaceAll("\\.0+$", "");
+		vStr = vStr.replaceAll("\\.?0+$", "");
 		return vStr + "f";
 	}
 
