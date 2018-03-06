@@ -78,7 +78,7 @@ public class FloatConverter extends InstanceFactory {
 
     @Override
     protected void instanceAttributeChanged(Instance instance, Attribute<?> attr) {
-        if (attr == StdAttr.FACING) {
+        if (attr == StdAttr.FACING || attr == ATTR_INPUT_TYPE || attr == StdAttr.WIDTH) {
             instance.recomputeBounds();
             configurePorts(instance);
         }
