@@ -64,6 +64,21 @@ You will, however, encounter a problem when you will try to execute the code. In
 * *resources*
 * *doc*
 
+## Editing logisim-evolution in IDEA
+IDEA doesn't have any way to import ant projects, so you'll have to set up dependencies yourself. 
+
+* click `File -> New -> Project from Existing Sources...`
+* select `Create project from existing sources`
+* accept each page as it auto-detects source/lib locations
+* run the `eclipse_fix.sh` script in the project root
+* click `File -> Project Structure...`
+* set a Project SDK in the `Project` sidebar item
+* select the module in the `Modules` sidebar item
+* go to the right panel and select the `Dependencies` tab
+* click the `+` icon at the bottom of the list and select `Jars or directories...`
+* select the `bin` directory created by `eclipse_fix.sh` earlier and click `Open`
+* click `OK` in the project structure dialog to close it
+* you're done!
 
 ## Retro-compatibility
 We cannot assure retro-compatibility of logisim-evolution with files created with the original Logisim.
