@@ -99,6 +99,10 @@ public class Value {
 		return Value.create(width, error, unknown, value);
 	}
 
+	public static Value createFloat(float value) {
+		return Value.create(32, 0, 0, Float.floatToRawIntBits(value));
+    }
+
 	public static Value createError(BitWidth bits) {
 		return Value.create(bits.getWidth(), -1, 0, 0);
 	}
@@ -111,8 +115,9 @@ public class Value {
 		return Value.create(bits.getWidth(), 0, -1, 0);
 	}
 
-	public static Value createFloat(float value) {
-		return Value.create(32, 0, 0, Float.floatToRawIntBits(value));
+	/* Added to test */
+	public static Value createKnown(int bits, int value) {
+		return Value.create(bits,  0, 0, value);
 	}
 
 	/**
@@ -300,7 +305,7 @@ public class Value {
 			return Value.create(Math.max(this.width, other.width), this.error
 					| other.error | disagree, this.unknown & other.unknown,
 					(this.value & ~this.unknown)
-							| (other.value & ~other.unknown));
+					| (other.value & ~other.unknown));
 		}
 	}
 
@@ -498,7 +503,7 @@ public class Value {
 			}
 			return "" + value;
 		} else {
-			return "" + ((long) value & 0xFFFFFFFFL);
+			return "" + (value & 0xFFFFFFFFL);
 		}
 	}
 
