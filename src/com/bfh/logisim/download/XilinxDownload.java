@@ -31,7 +31,6 @@
 package com.bfh.logisim.download;
 
 import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.Rectangle;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -46,9 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JProgressBar;
 
 import com.bfh.logisim.designrulecheck.Netlist;
 import com.bfh.logisim.fpgaboardeditor.BoardInformation;
@@ -56,6 +53,12 @@ import com.bfh.logisim.fpgaboardeditor.IoStandards;
 import com.bfh.logisim.fpgaboardeditor.PullBehaviors;
 import com.bfh.logisim.fpgagui.FPGAReport;
 import com.bfh.logisim.fpgagui.MappableResourcesContainer;
+import com.bfh.logisim.gui.FPGACliGuiFabric;
+import com.bfh.logisim.gui.IFPGAFrame;
+import com.bfh.logisim.gui.IFPGAGrid;
+import com.bfh.logisim.gui.IFPGAGridLayout;
+import com.bfh.logisim.gui.IFPGALabel;
+import com.bfh.logisim.gui.IFPGAProgressBar;
 import com.bfh.logisim.hdlgenerator.FileWriter;
 import com.bfh.logisim.hdlgenerator.TickComponentHDLGeneratorFactory;
 import com.bfh.logisim.hdlgenerator.ToplevelHDLGeneratorFactory;
@@ -63,9 +66,12 @@ import com.bfh.logisim.settings.VendorSoftware;
 import com.cburch.logisim.proj.Projects;
 
 public class XilinxDownload {
+	/* TODO There are duplicated code lines amongst the 3 file AlteraDownload / Vivado / Xillinx
+	 * it should be sorted by using a base class to all 3 of them
+	 */
 	public static boolean Download(
 			BoardInformation BoardInfo, String scriptPath, String UcfPath,
-			String ProjectPath, String SandboxPath, FPGAReport MyReporter) {
+			String ProjectPath, String SandboxPath, FPGAReport MyReporter, boolean DownloadBitstream) {
 		VendorSoftware xilinxVendor = VendorSoftware.getSoftware(VendorSoftware.VendorXilinx);
 		boolean IsCPLD = BoardInfo.fpga.getPart().toUpperCase()
 				.startsWith("XC2C")
@@ -77,36 +83,39 @@ public class XilinxDownload {
 		boolean BitFileExists = new File(SandboxPath
 				+ ToplevelHDLGeneratorFactory.FPGAToplevelName + "."
 				+ BitfileExt).exists();
-		GridBagConstraints gbc = new GridBagConstraints();
-		JFrame panel = new JFrame("Xilinx Downloading");
+		IFPGAGrid gbc = FPGACliGuiFabric.getFPGAGrid() ;
+		IFPGAFrame panel = FPGACliGuiFabric.getFPGAFrame("Xilinx Downloading");
 		panel.setResizable(false);
 		panel.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		GridBagLayout thisLayout = new GridBagLayout();
+		IFPGAGridLayout thisLayout = FPGACliGuiFabric.getFPGAGridLayout();
 		panel.setLayout(thisLayout);
 		// PointerInfo mouseloc = MouseInfo.getPointerInfo();
 		// Point mlocation = mouseloc.getLocation();
 		// panel.setLocation(mlocation.x,mlocation.y);
-		JLabel LocText = new JLabel(
-				"Generating FPGA files and performing download; this may take a while");
-		gbc.gridx = 0;
-		gbc.gridy = 0;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
+		IFPGALabel LocText = FPGACliGuiFabric.getFPGALabel("Generating FPGA files and performing download; this may take a while");
+
+		gbc.setGridx(0);
+		gbc.setGridy(1);
+		gbc.setFill(GridBagConstraints.HORIZONTAL);
 		panel.add(LocText, gbc);
-		JProgressBar progres = new JProgressBar(0, xilinxVendor.getBinaries().length);
+		IFPGAProgressBar progres = FPGACliGuiFabric.getFPGAProgressBar(0,  xilinxVendor.getBinaries().length);
 		progres.setValue(0);
 		progres.setStringPainted(true);
-		gbc.gridx = 0;
-		gbc.gridy = 1;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.setGridx(0);
+		gbc.setGridy(2);
+		gbc.setFill(GridBagConstraints.HORIZONTAL);
 		panel.add(progres, gbc);
 		panel.pack();
+
 		panel.setLocation(Projects.getCenteredLoc(panel.getWidth(),
 				panel.getHeight() * 4));
 		panel.setVisible(true);
 		Rectangle labelRect = LocText.getBounds();
+
 		labelRect.x = 0;
 		labelRect.y = 0;
 		LocText.paintImmediately(labelRect);
+
 		List<String> command = new ArrayList<String>();
 		if (!BitFileExists) {
 			try {
@@ -140,22 +149,23 @@ public class XilinxDownload {
 				CreateProject.waitFor();
 				if (CreateProject.exitValue() != 0) {
 					MyReporter
-							.AddFatalError("Failed to Synthesize Xilinx project; cannot download");
+					.AddFatalError("Failed to Synthesize Xilinx project; cannot download");
 					panel.dispose();
 					return false;
 				}
 			} catch (IOException e) {
 				MyReporter
-						.AddFatalError("Internal Error during Xilinx download");
+				.AddFatalError("Internal Error during Xilinx download");
 				panel.dispose();
 				return false;
 			} catch (InterruptedException e) {
 				MyReporter
-						.AddFatalError("Internal Error during Xilinx download");
+				.AddFatalError("Internal Error during Xilinx download");
 				panel.dispose();
 				return false;
 			}
 		}
+
 		if (!BitFileExists) {
 			try {
 				LocText.setText("Adding contraints");
@@ -191,22 +201,23 @@ public class XilinxDownload {
 				CreateProject.waitFor();
 				if (CreateProject.exitValue() != 0) {
 					MyReporter
-							.AddFatalError("Failed to add Xilinx constraints; cannot download");
+					.AddFatalError("Failed to add Xilinx constraints; cannot download");
 					panel.dispose();
 					return false;
 				}
 			} catch (IOException e) {
 				MyReporter
-						.AddFatalError("Internal Error during Xilinx download");
+				.AddFatalError("Internal Error during Xilinx download");
 				panel.dispose();
 				return false;
 			} catch (InterruptedException e) {
 				MyReporter
-						.AddFatalError("Internal Error during Xilinx download");
+				.AddFatalError("Internal Error during Xilinx download");
 				panel.dispose();
 				return false;
 			}
 		}
+
 		if (!BitFileExists && !IsCPLD) {
 			try {
 				LocText.setText("Mapping Design");
@@ -240,18 +251,18 @@ public class XilinxDownload {
 				CreateProject.waitFor();
 				if (CreateProject.exitValue() != 0) {
 					MyReporter
-							.AddFatalError("Failed to map Xilinx design; cannot download");
+					.AddFatalError("Failed to map Xilinx design; cannot download");
 					panel.dispose();
 					return false;
 				}
 			} catch (IOException e) {
 				MyReporter
-						.AddFatalError("Internal Error during Xilinx download");
+				.AddFatalError("Internal Error during Xilinx download");
 				panel.dispose();
 				return false;
 			} catch (InterruptedException e) {
 				MyReporter
-						.AddFatalError("Internal Error during Xilinx download");
+				.AddFatalError("Internal Error during Xilinx download");
 				panel.dispose();
 				return false;
 			}
@@ -316,23 +327,28 @@ public class XilinxDownload {
 				CreateProject.waitFor();
 				if (CreateProject.exitValue() != 0) {
 					MyReporter
-							.AddFatalError("Failed to P&R Xilinx design; cannot download");
+					.AddFatalError("Failed to P&R Xilinx design; cannot download");
 					panel.dispose();
 					return false;
 				}
 			} catch (IOException e) {
 				MyReporter
-						.AddFatalError("Internal Error during Xilinx download");
+				.AddFatalError("Internal Error during Xilinx download");
 				panel.dispose();
 				return false;
 			} catch (InterruptedException e) {
 				MyReporter
-						.AddFatalError("Internal Error during Xilinx download");
+				.AddFatalError("Internal Error during Xilinx download");
 				panel.dispose();
 				return false;
 			}
 		}
 		if (!BitFileExists) {
+
+			if (!DownloadBitstream) {
+				return true;
+			}
+
 			try {
 				LocText.setText("Generating Bitfile");
 				labelRect = LocText.getBounds();
@@ -380,18 +396,18 @@ public class XilinxDownload {
 				CreateProject.waitFor();
 				if (CreateProject.exitValue() != 0) {
 					MyReporter
-							.AddFatalError("Failed generate bitfile; cannot download");
+					.AddFatalError("Failed generate bitfile; cannot download");
 					panel.dispose();
 					return false;
 				}
 			} catch (IOException e) {
 				MyReporter
-						.AddFatalError("Internal Error during Xilinx download");
+				.AddFatalError("Internal Error during Xilinx download");
 				panel.dispose();
 				return false;
 			} catch (InterruptedException e) {
 				MyReporter
-						.AddFatalError("Internal Error during Xilinx download");
+				.AddFatalError("Internal Error during Xilinx download");
 				panel.dispose();
 				return false;
 			}
@@ -408,8 +424,9 @@ public class XilinxDownload {
 			ProgRect.y = 0;
 			progres.paintImmediately(ProgRect);
 			Object[] options = { "Yes, download","No, abort" };
-			if (JOptionPane
-					.showOptionDialog(
+			/* TODO remove in case of cli mode */
+			if (FPGACliGuiFabric.getFPGAOptionPanel()
+					.doshowOptionDialog(
 							progres,
 							"Verify that your board is connected and you are ready to download.",
 							"Ready to download ?", JOptionPane.YES_NO_OPTION,
@@ -520,7 +537,7 @@ public class XilinxDownload {
 		ArrayList<String> Contents = new ArrayList<String>();
 		for (int i = 0; i < Entities.size(); i++) {
 			Contents.add(HDLType.toUpperCase() + " work \"" + Entities.get(i)
-					+ "\"");
+			+ "\"");
 		}
 		for (int i = 0; i < Architectures.size(); i++) {
 			Contents.add(HDLType.toUpperCase() + " work \""
@@ -615,7 +632,7 @@ public class XilinxDownload {
 	private static String GetXilinxClockPin(BoardInformation CurrentBoard) {
 		StringBuffer result = new StringBuffer();
 		result.append("LOC = \"" + CurrentBoard.fpga.getClockPinLocation()
-				+ "\"");
+		+ "\"");
 		if (CurrentBoard.fpga.getClockPull() == PullBehaviors.PullUp) {
 			result.append(" | PULLUP");
 		}
@@ -626,7 +643,7 @@ public class XilinxDownload {
 				&& CurrentBoard.fpga.getClockStandard() != IoStandards.Unknown) {
 			result.append(" | IOSTANDARD = "
 					+ IoStandards.Behavior_strings[CurrentBoard.fpga
-							.getClockStandard()]);
+					                               .getClockStandard()]);
 		}
 		return result.toString();
 	}

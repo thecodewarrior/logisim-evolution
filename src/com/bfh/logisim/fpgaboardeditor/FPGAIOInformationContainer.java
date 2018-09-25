@@ -78,6 +78,8 @@ public class FPGAIOInformationContainer {
 			return IOComponentTypes.Unknown;
 		}
 
+		/* AMX: Localbus / Port IO / Pin led buton information about the number of input pins.
+		 * This is the wrong way to do it. It should be taken from the Xml file!! */
 		public static final int GetFPGAInOutRequirement(IOComponentTypes comp) {
 			switch (comp) {
 			case PortIO:
@@ -89,6 +91,8 @@ public class FPGAIOInformationContainer {
 			}
 		}
 
+		/* AMX: Localbus / Port IO / Pin led buton information about the number of input pins.
+		 * This is the wrong way to do it. It should be taken from the Xml file!! */
 		public static final int GetFPGAInputRequirement(IOComponentTypes comp) {
 			switch (comp) {
 			case Button:
@@ -96,12 +100,14 @@ public class FPGAIOInformationContainer {
 			case DIPSwitch:
 				return nbSwitch;
 			case LocalBus:
-				return 12;
+				return 13;
 			default:
 				return 0;
 			}
 		}
 
+		/* AMX: Localbus / Port IO / Pin led buton information about the number of output pins.
+		 * This is the wrong way to do it. It should be taken from the Xml file!! */
 		public static final int GetFPGAOutputRequirement(IOComponentTypes comp) {
 			switch (comp) {
 			case LED:
@@ -117,6 +123,8 @@ public class FPGAIOInformationContainer {
 			}
 		}
 
+		/* AMX: Localbus / Port IO / Pin led buton information about the total of pins pins.
+		 * This is the wrong way to do it. It should be taken from the Xml file!! */
 		public static final int GetNrOfFPGAPins(IOComponentTypes comp) {
 			switch (comp) {
 			case LED:
@@ -131,7 +139,7 @@ public class FPGAIOInformationContainer {
 			case RGBLED:
 				return 3;
 			case LocalBus:
-				return 30;
+				return 31;
 			default:
 				return 0;
 			}
@@ -322,7 +330,7 @@ public class FPGAIOInformationContainer {
 			MyActivityLevel = PinActivity.ActiveHigh;
 		MyRectangle = new BoardRectangle(x, y, width, height);
 	}
-	
+
 	public void edit(BoardDialog parent) {
 		if (!defined())
 			return;
@@ -365,7 +373,7 @@ public class FPGAIOInformationContainer {
 			// : HDLGeneratorFactory.FPGAOutputPinName + "_" +
 			// Integer.toString(StartId + i);
 			Contents.add("    set_location_assignment " + MyPinLocations.get(i)
-					+ " -to " + NetName);
+			+ " -to " + NetName);
 			if (MyPullBehavior == PullBehaviors.PullUp) {
 				Contents.add("    set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to " + NetName);
 			}
@@ -490,6 +498,7 @@ public class FPGAIOInformationContainer {
 		JComboBox<String> ActiveInput = new JComboBox<>(
 				PinActivity.Behavior_strings);
 		ActionListener actionListener = new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (e.getActionCommand().equals("cancel")) {
 					MyType = IOComponentTypes.Unknown;
@@ -540,7 +549,7 @@ public class FPGAIOInformationContainer {
 				c.gridy = oldY;
 			}
 			JLabel LocText = new JLabel("Specify " + PinLabels.get(i)
-					+ " location:");
+			+ " location:");
 			c.gridx = 0 + offset;
 			c.gridy++;
 			selWindow.add(LocText, c);
@@ -701,6 +710,7 @@ public class FPGAIOInformationContainer {
 		final JDialog selWindow = new JDialog(parent.GetPanel(), MyType
 				+ " number of " + text);
 		ActionListener actionListener = new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (e.getActionCommand().equals("next")) {
 					MyType.setNbSwitch(Integer.valueOf(((JComboBox) (selWindow
@@ -793,13 +803,13 @@ public class FPGAIOInformationContainer {
 					&& MyPullBehavior != PullBehaviors.Float) {
 				Temp.append("| "
 						+ PullBehaviors
-								.getContraintedPullString(MyPullBehavior) + " ");
+						.getContraintedPullString(MyPullBehavior) + " ");
 			}
 			if (MyDriveStrength != DriveStrength.Unknown
 					&& MyDriveStrength != DriveStrength.DefaulStength) {
 				Temp.append("| DRIVE = "
 						+ DriveStrength
-								.GetContraintedDriveStrength(MyDriveStrength)
+						.GetContraintedDriveStrength(MyDriveStrength)
 						+ " ");
 			}
 			if (MyIOStandard != IoStandards.Unknown
@@ -849,7 +859,15 @@ public class FPGAIOInformationContainer {
 			}
 			contents.add("set_property PACKAGE_PIN " + MyPinLocations.get(i) +
 					" [get_ports {" + netName + "}]");
-			contents.add("    set_property IOSTANDARD LVCMOS33 [get_ports {" + netName + "}]");
+
+			if (MyIOStandard != IoStandards.Unknown	&& MyIOStandard != IoStandards.DefaulStandard) {
+				contents.add("    set_property IOSTANDARD " +
+						IoStandards.GetConstraintedIoStandard(MyIOStandard) +" [get_ports {" + netName + "}]");
+			}
+			if (MyIOStandard != IoStandards.Unknown	&& MyIOStandard != IoStandards.DefaulStandard) {
+				contents.add("    set_property IOSTANDARD " +
+						IoStandards.GetConstraintedIoStandard(MyIOStandard) +" [get_ports {" + netName + "}]");
+			}
 		}
 		return contents;
 	}
@@ -913,6 +931,7 @@ public class FPGAIOInformationContainer {
 		JLabel message = new JLabel(string);
 		JButton close = new JButton("close");
 		ActionListener actionListener = new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				// panel.setAlwaysOnTop(true);
 				dialog.dispose();

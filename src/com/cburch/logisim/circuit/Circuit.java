@@ -36,12 +36,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeSet;
 import java.util.WeakHashMap;
 
@@ -121,10 +123,12 @@ public class Circuit {
 	}
 
 	private class MyComponentListener implements ComponentListener {
+		@Override
 		public void componentInvalidated(ComponentEvent e) {
 			fireEvent(CircuitEvent.ACTION_INVALIDATE, e.getSource());
 		}
 
+		@Override
 		public void endChanged(ComponentEvent e) {
 			locker.checkForWritePermission("ends changed");
 			Annotated = false;
@@ -154,11 +158,12 @@ public class Circuit {
 			}
 			return map;
 		}
-		
+
+		@Override
 		public void LabelChanged(ComponentEvent e) {
 			AttributeEvent attre = (AttributeEvent) e.getData();
 			if (attre.getSource()==null||
-				attre.getValue()==null) {
+					attre.getValue()==null) {
 				return;
 			}
 			String newLabel = (String) attre.getValue();
@@ -173,17 +178,17 @@ public class Circuit {
 			}
 		}
 	}
-	
+
 	public static boolean IsCorrectLabel(String Name,
-			                             Set<Component> components,
-			                             AttributeSet me,
-			                             ComponentFactory myFactory,
-			                             Boolean ShowDialog) {
+			Set<Component> components,
+			AttributeSet me,
+			ComponentFactory myFactory,
+			Boolean ShowDialog) {
 		if (myFactory instanceof Tunnel)
 			return true;
 		return !(IsExistingLabel(Name,me,components,ShowDialog)||IsComponentName(Name,components,ShowDialog));
 	}
-	
+
 	private static boolean IsComponentName(String Name, Set<Component> comps, Boolean ShowDialog) {
 		if (Name.isEmpty())
 			return false;
@@ -199,7 +204,7 @@ public class Circuit {
 		/* we do not have to check the wires as (1) Wire is a reserved keyword, and (2) they cannot have a label */
 		return false;
 	}
-	
+
 	private static boolean IsExistingLabel(String Name, AttributeSet me, Set<Component> comps, Boolean ShowDialog) {
 		if (Name.isEmpty())
 			return false;
@@ -207,13 +212,13 @@ public class Circuit {
 			if (!comp.getAttributeSet().equals(me)&&!(comp.getFactory() instanceof Tunnel)) {
 				String Label = (comp.getAttributeSet().containsAttribute(StdAttr.LABEL)) ?
 						comp.getAttributeSet().getValue(StdAttr.LABEL) : "";
-				if (Label.toUpperCase().equals(Name.toUpperCase())) {
-					if (ShowDialog) {
-						String msg = com.cburch.logisim.circuit.Strings.get("UsedLabelNameError");
-						JOptionPane.showMessageDialog(null, "\""+Name+"\" : "+msg);
-					}
-					return true;
-				}
+						if (Label.toUpperCase().equals(Name.toUpperCase())) {
+							if (ShowDialog) {
+								String msg = com.cburch.logisim.circuit.Strings.get("UsedLabelNameError");
+								JOptionPane.showMessageDialog(null, "\""+Name+"\" : "+msg);
+							}
+							return true;
+						}
 			}
 		}
 		/* we do not have to check the wires as (1) Wire is a reserved keyword, and (2) they cannot have a label */
@@ -227,14 +232,15 @@ public class Circuit {
 		return comp.getEnd(0).getType() != EndData.INPUT_ONLY;
 	}
 
+	private int maxTimeoutTestBenchSec = 60000;
 	private MyComponentListener myComponentListener = new MyComponentListener();
 	private CircuitAppearance appearance;
 	private AttributeSet staticAttrs;
 	private SubcircuitFactory subcircuitFactory;
 	private EventSourceWeakSupport<CircuitListener> listeners = new EventSourceWeakSupport<CircuitListener>();
-	private HashSet<Component> comps = new HashSet<Component>(); // doesn't
-																	// include
-																	// wires
+	private LinkedHashSet<Component> comps = new LinkedHashSet<Component>(); // doesn't
+	// include
+	// wires
 	CircuitWires wires = new CircuitWires();
 	private ArrayList<Component> clocks = new ArrayList<Component>();
 	private ArrayList<Component> ticking = new ArrayList<Component>();
@@ -262,11 +268,11 @@ public class Circuit {
 		staticAttrs.setValue(CircuitAttributes.NAMED_CIRCUIT_BOX, AppPreferences.NAMED_CIRCUIT_BOXES.getBoolean());
 		this.proj = proj;
 	}
-	
+
 	public void SetProject(Project proj) {
 		this.proj = proj;
 	}
-	
+
 	public Graphics GetGraphics() {
 		return (proj==null) ? null : proj.getFrame().getGraphics();
 	}
@@ -277,7 +283,7 @@ public class Circuit {
 	public void addCircuitListener(CircuitListener what) {
 		listeners.add(what);
 	}
-	
+
 	private class AnnotateComparator implements Comparator<Component> {
 
 		@Override
@@ -289,12 +295,12 @@ public class Circuit {
 			if (l2.getY() != l1.getY())
 				return l1.getY()-l2.getY();
 			if (l2.getX() != l1.getX())
-			    return l1.getX()-l2.getX();
+				return l1.getX()-l2.getX();
 			return -1;
 		}
-		
+
 	}
-	
+
 	private static String GetAnnotationName(Component comp) {
 		String ComponentName;
 		/* Pins are treated specially */
@@ -327,8 +333,8 @@ public class Circuit {
 		}
 		SortedSet<Component> comps = new TreeSet<Component>(new AnnotateComparator());
 		HashMap<String,AutoLabel> lablers = new HashMap<String,AutoLabel>();
-		Set<String> LabelNames = new HashSet<String>();
-		Set<String> Subcircuits = new HashSet<String>();
+		Set<String> LabelNames = new LinkedHashSet<String>();
+		Set<String> Subcircuits = new LinkedHashSet<String>();
 		for (Component comp:getNonWires()) {
 			if (comp.getFactory() instanceof Tunnel)
 				continue;
@@ -376,7 +382,7 @@ public class Circuit {
 		for (Component comp : comps) {
 			String ComponentName = GetAnnotationName(comp);
 			if (!lablers.containsKey(ComponentName)||
-				!lablers.get(ComponentName).hasNext(this)) {
+					!lablers.get(ComponentName).hasNext(this)) {
 				/* This should never happen! */
 				reporter.AddFatalError("Annotate internal Error: Either there exists duplicate labels or the label syntax is incorrect!\nPlease try annotation on labeled components also\n");
 				return;
@@ -412,6 +418,46 @@ public class Circuit {
 
 	public boolean contains(Component c) {
 		return comps.contains(c) || wires.getWires().contains(c);
+	}
+
+	/* The function will tick. Then once the tick was propagated
+	 * in the circuit, the output value are going to be checked.
+	 * The pin[0] is indicating when the simulation is done.
+	 * Once the Simulation is done (pin[0] to 1) the value of pin[1]
+	 * will be checked and if the value of pin[1] is 1 the function return true.
+	 * It will return zero otherwise  */
+	public boolean doTestBench(Project project, Instance pin[], Value[] val) {
+		CircuitState state = project.getCircuitState();
+		/* This is introduced in order to not block in case both the signal never happend*/
+		InstanceState[] pinsState = new InstanceState[pin.length];
+		Value[] vPins = new Value[pin.length];
+		state.reset();
+
+		TimeoutSimulation ts = new TimeoutSimulation();
+		Timer timer = new Timer();
+		timer.schedule(ts, maxTimeoutTestBenchSec);
+
+		while (true) {
+			int i = 0;
+			project.getSimulator().tick();
+			Thread.yield();
+
+			for(Instance pinstatus: pin) {
+				pinsState[i] = state.getInstanceState(pinstatus);
+				vPins[i] = Pin.FACTORY.getValue(pinsState[i]);
+				i++;
+			}
+
+			if (val[0].compatible(vPins[0])) {
+				if (vPins[0].equals(Value.TRUE)) {
+					return (val[1].compatible(vPins[1]) && vPins[1].equals(Value.TRUE));
+				}
+			}
+
+			if (ts.getTimeout()) {
+				return false;
+			}
+		}
 	}
 
 	/**
@@ -516,7 +562,7 @@ public class Circuit {
 	}
 
 	public Collection<Component> getAllContaining(Location pt) {
-		HashSet<Component> ret = new HashSet<Component>();
+		LinkedHashSet<Component> ret = new LinkedHashSet<Component>();
 		for (Component comp : getComponents()) {
 			if (comp.contains(pt))
 				ret.add(comp);
@@ -525,7 +571,7 @@ public class Circuit {
 	}
 
 	public Collection<Component> getAllContaining(Location pt, Graphics g) {
-		HashSet<Component> ret = new HashSet<Component>();
+		LinkedHashSet<Component> ret = new LinkedHashSet<Component>();
 		for (Component comp : getComponents()) {
 			if (comp.contains(pt, g))
 				ret.add(comp);
@@ -534,7 +580,7 @@ public class Circuit {
 	}
 
 	public Collection<Component> getAllWithin(Bounds bds) {
-		HashSet<Component> ret = new HashSet<Component>();
+		LinkedHashSet<Component> ret = new LinkedHashSet<Component>();
 		for (Component comp : getComponents()) {
 			if (bds.contains(comp.getBounds()))
 				ret.add(comp);
@@ -543,7 +589,7 @@ public class Circuit {
 	}
 
 	public Collection<Component> getAllWithin(Bounds bds, Graphics g) {
-		HashSet<Component> ret = new HashSet<Component>();
+		LinkedHashSet<Component> ret = new LinkedHashSet<Component>();
 		for (Component comp : getComponents()) {
 			if (bds.contains(comp.getBounds(g)))
 				ret.add(comp);
@@ -663,7 +709,7 @@ public class Circuit {
 	public Netlist getNetList() {
 		return MyNetList;
 	}
-	
+
 	public Set<Component> getNonWires() {
 		return comps;
 	}
@@ -767,7 +813,7 @@ public class Circuit {
 		locker.checkForWritePermission("clear");
 
 		Set<Component> oldComps = comps;
-		comps = new HashSet<Component>();
+		comps = new LinkedHashSet<Component>();
 		wires = new CircuitWires();
 		clocks.clear();
 		ticking.clear();
@@ -807,7 +853,7 @@ public class Circuit {
 		}
 		fireEvent(CircuitEvent.ACTION_REMOVE, c);
 	}
-	
+
 	private void RemoveWrongLabels(String Label) {
 		boolean HaveAChange = false;
 		for (Component comp : comps) {
@@ -824,7 +870,7 @@ public class Circuit {
 		if (HaveAChange)
 			JOptionPane.showMessageDialog(null, "\""+Label+"\" : "+Strings.get("ComponentLabelCollisionError"));
 	}
-	
+
 	public void removeCircuitListener(CircuitListener what) {
 		listeners.remove(what);
 	}
@@ -839,5 +885,23 @@ public class Circuit {
 	@Override
 	public String toString() {
 		return staticAttrs.getValue(CircuitAttributes.NAME_ATTR);
+	}
+
+	public class TimeoutSimulation extends TimerTask {
+
+		/* Make it atomic */
+		private volatile boolean timedOut;
+		public TimeoutSimulation() {
+			timedOut = false;
+		}
+
+		public boolean getTimeout() {
+			return timedOut;
+		}
+
+		@Override
+		public void run() {
+			timedOut = true;
+		}
 	}
 }

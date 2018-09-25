@@ -66,9 +66,11 @@ import com.cburch.logisim.tools.Tool;
 import com.cburch.logisim.util.EventSourceWeakSupport;
 import com.cburch.logisim.util.ListUtil;
 import com.cburch.logisim.util.StringUtil;
+import com.cburch.logisim.util.UniquelyNamedThread;
 
 public class LogisimFile extends Library implements LibraryEventSource,CircuitListener {
 
+	@Override
 	public void circuitChanged(CircuitEvent event) {
 		int act = event.getAction();
 		if (act == CircuitEvent.ACTION_CHECK_NAME) {
@@ -77,11 +79,11 @@ public class LogisimFile extends Library implements LibraryEventSource,CircuitLi
 			if (NameIsInUse(newname,event.getCircuit())) {
 				JOptionPane.showMessageDialog(null, "\""+newname+"\": "+Strings.get("circuitNameExists"),
 						"",JOptionPane.ERROR_MESSAGE);
-				event.getCircuit().getStaticAttributes().setValue(CircuitAttributes.NAME_ATTR, (String) oldname);;
+				event.getCircuit().getStaticAttributes().setValue(CircuitAttributes.NAME_ATTR, oldname);
 			}
 		}
 	}
-	
+
 	// Name check Methods
 	private boolean NameIsInUse(String Name,Circuit changed) {
 		if (Name.isEmpty())
@@ -116,11 +118,12 @@ public class LogisimFile extends Library implements LibraryEventSource,CircuitLi
 
 	
 
-	private static class WritingThread extends Thread {
+	private static class WritingThread extends UniquelyNamedThread {
 		OutputStream out;
 		LogisimFile file;
 
 		WritingThread(OutputStream out, LogisimFile file) {
+			super("WritingThread");
 			this.out = out;
 			this.file = file;
 		}
@@ -290,6 +293,7 @@ public class LogisimFile extends Library implements LibraryEventSource,CircuitLi
 	//
 	// listener methods
 	//
+	@Override
 	public void addLibraryListener(LibraryListener what) {
 		listeners.add(what);
 	}
@@ -403,6 +407,7 @@ public class LogisimFile extends Library implements LibraryEventSource,CircuitLi
 		return libraries;
 	}
 
+	@Override
 	public boolean removeLibrary(String Name) {
 		int index = -1;
 		for (Library lib : libraries)
@@ -517,6 +522,7 @@ public class LogisimFile extends Library implements LibraryEventSource,CircuitLi
 		fireEvent(LibraryEvent.REMOVE_LIBRARY, lib);
 	}
 
+	@Override
 	public void removeLibraryListener(LibraryListener what) {
 		listeners.remove(what);
 	}

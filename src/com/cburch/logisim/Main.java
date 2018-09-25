@@ -30,9 +30,11 @@
 
 package com.cburch.logisim;
 
+import java.awt.GraphicsEnvironment;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -46,7 +48,9 @@ import com.cburch.logisim.prefs.AppPreferences;
 public class Main {
 	public static void main(String[] args) throws Exception {
 		try {
-			UIManager.setLookAndFeel(AppPreferences.LookAndFeel.get());
+			if (!GraphicsEnvironment.isHeadless())  {
+				UIManager.setLookAndFeel(AppPreferences.LookAndFeel.get());
+			}
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (InstantiationException e) {
@@ -69,7 +73,11 @@ public class Main {
 					Writer result = new StringWriter();
 					PrintWriter printWriter = new PrintWriter(result);
 					e.printStackTrace(printWriter);
-					JOptionPane.showMessageDialog(null, result.toString());
+					if (GraphicsEnvironment.isHeadless()) {
+						System.out.println(result.toString());
+					} else {
+						JOptionPane.showMessageDialog(null, result.toString());
+					}
 					System.exit(-1);
 				}
 			}
@@ -78,7 +86,7 @@ public class Main {
 
 	final static Logger logger = LoggerFactory.getLogger(Main.class);
 
-	public static final LogisimVersion VERSION = LogisimVersion.get(2, 14, 4,
+	public static final LogisimVersion VERSION = LogisimVersion.get(2, 14, 6,
 			LogisimVersion.FINAL_REVISION);
 
 	public static final String VERSION_NAME = VERSION.toString();

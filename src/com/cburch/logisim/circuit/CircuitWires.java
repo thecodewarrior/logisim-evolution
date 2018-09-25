@@ -31,7 +31,8 @@
 package com.cburch.logisim.circuit;
 
 import java.awt.Color;
-import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Stroke;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import javax.swing.SwingUtilities;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +66,6 @@ import com.cburch.logisim.util.IteratorUtil;
 class CircuitWires {
 
 	static class BundleMap {
-		boolean computed = false;
 		HashMap<Location, WireBundle> pointBundles = new HashMap<Location, WireBundle>();
 		HashSet<WireBundle> bundles = new HashSet<WireBundle>();
 		boolean isValid = true;
@@ -114,22 +115,8 @@ class CircuitWires {
 			return isValid;
 		}
 
-		synchronized void markComputed() {
-			computed = true;
-			notifyAll();
-		}
-
 		void setBundleAt(Location p, WireBundle b) {
 			pointBundles.put(p, b);
-		}
-
-		synchronized void waitUntilComputed() {
-			while (!computed) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-				}
-			}
 		}
 	}
 
@@ -218,7 +205,7 @@ class CircuitWires {
 	// derived data
 	private Bounds bounds = Bounds.EMPTY_BOUNDS;
 
-	private BundleMap bundleMap = null;
+	private BundleMap masterBundleMap = null;
 
 	CircuitWires() {
 	}
@@ -228,7 +215,7 @@ class CircuitWires {
 	//
 	// NOTE: this could be made much more efficient in most cases to
 	// avoid voiding the bundle map.
-	boolean add(Component comp) {
+	/*synchronized*/ boolean add(Component comp) {
 		boolean added = true;
 		if (comp instanceof Wire) {
 			added = addWire((Wire) comp);
@@ -251,7 +238,7 @@ class CircuitWires {
 		return added;
 	}
 
-	void add(Component comp, EndData end) {
+	/*synchronized*/ void add(Component comp, EndData end) {
 		points.add(comp, end);
 		voidBundleMap();
 	}
@@ -469,7 +456,7 @@ class CircuitWires {
 	void draw(ComponentDrawContext context, Collection<Component> hidden) {
 		boolean showState = context.getShowState();
 		CircuitState state = context.getCircuitState();
-		Graphics g = context.getGraphics();
+		Graphics2D g = (Graphics2D)context.getGraphics();
 		g.setColor(Color.BLACK);
 		GraphicsUtil.switchToWidth(g, Wire.WIDTH);
 		WireSet highlighted = context.getHighlightedWires();
@@ -499,6 +486,12 @@ class CircuitWires {
 						width = Wire.HIGHLIGHTED_WIDTH;
 					GraphicsUtil.switchToWidth(g, width);
 					g.drawLine(s.getX(), s.getY(), t.getX(), t.getY());
+
+					Stroke oldStroke = g.getStroke();
+					g.setStroke(Wire.HIGHLIGHTED_STROKE);
+					g.setColor(Color.MAGENTA);
+					g.drawLine(s.getX(), s.getY(), t.getX(), t.getY());
+					g.setStroke(oldStroke);
 				} else {
 					if (wb.isBus())
 						width = Wire.WIDTH_BUS;
@@ -507,9 +500,12 @@ class CircuitWires {
 					GraphicsUtil.switchToWidth(g, width);
 					g.drawLine(s.getX(), s.getY(), t.getX(), t.getY());
 				}
-				if (w.IsSetAsMarked()) {
-					width+=2;
-					g.setColor(w.GetMarkColor());
+				/* The following part is used by the FPGA-commanders DRC to highlight a wire with DRC
+				 * problems (KTT1)
+				 */
+				if (w.IsDRCHighlighted()) {
+					width += 2;
+					g.setColor(w.GetDRCHighlightColor());
 					GraphicsUtil.switchToWidth(g, 2);
 					if (w.isVertical()) {
 						g.drawLine(s.getX()-width, s.getY(), t.getX()-width, t.getY());
@@ -543,6 +539,7 @@ class CircuitWires {
 							radius = wb.isBus() ? (int)(Wire.WIDTH_BUS*Wire.DOT_MULTIPLY_FACTOR) : 
 								                  (int)(Wire.WIDTH*Wire.DOT_MULTIPLY_FACTOR);
 						}
+                                                radius = (int)(radius * Wire.DOT_MULTIPLY_FACTOR);
 						g.fillOval(loc.getX() - radius, loc.getY() - radius, radius*2, radius*2);
 					}
 				}
@@ -606,6 +603,7 @@ class CircuitWires {
 							} else {
 								radius = wb.isBus() ? Wire.WIDTH_BUS : Wire.WIDTH;
 							}
+                                                        radius = (int)(radius * Wire.DOT_MULTIPLY_FACTOR);
 							g.fillOval(loc.getX() - radius, loc.getY() - radius, radius*2, radius*2);
 						}
 					}
@@ -614,44 +612,48 @@ class CircuitWires {
 		}
 	}
 
-	void ensureComputed() {
-		getBundleMap();
-	}
+	// void ensureComputed() {
+	//	getBundleMap();
+	// }
 
-	private BundleMap getBundleMap() {
-		// Maybe we already have a valid bundle map (or maybe
-		// one is in progress).
-		BundleMap ret = bundleMap;
-		if (ret != null) {
-			ret.waitUntilComputed();
-			return ret;
-		}
-		try {
-			// Ok, we have to create our own.
-			for (int tries = 4; tries >= 0; tries--) {
-				try {
-					ret = new BundleMap();
-					computeBundleMap(ret);
-					bundleMap = ret;
-					break;
-				} catch (Exception t) {
-					if (tries == 0) {
-						t.printStackTrace();
-						logger.error("{}", t.getLocalizedMessage());
-						bundleMap = ret;
-					}
-				}
+	// There are only two threads that need to use the bundle map, I think:
+	// the AWT event thread, and the simulation worker thread.
+	// AWT does modifications to the components and wires, then voids the
+	// masterBundleMap, and eventually recomputes a new map (if needed) during
+	// painting. AWT sometimes locks a splitter, then changes components and
+	// wires.
+	// Computing a new bundle map requires both locking splitters and touching
+	// the components and wires, so to avoid deadlock, only the AWT should
+	// create the new bundle map.
+
+	/*synchronized*/ private BundleMap getBundleMap() {
+		if (SwingUtilities.isEventDispatchThread()) {
+			// AWT event thread.
+			if (masterBundleMap != null)
+				return masterBundleMap;
+			BundleMap ret = new BundleMap();
+			try {
+				computeBundleMap(ret);
+				masterBundleMap = ret;
+			} catch (Exception t) {
+				ret.invalidate();
+				logger.error("{}", t.getLocalizedMessage());
 			}
-		} catch (RuntimeException ex) {
-			ret.invalidate();
-			ret.markComputed();
-			throw ex;
-		} finally {
-			// Mark the BundleMap as computed in case anybody is waiting for the
-			// result.
-			ret.markComputed();
+			return ret;
+		} else {
+			// Simulation thread.
+			try {
+				final BundleMap ret[] = new BundleMap[1];
+				SwingUtilities.invokeAndWait(new Runnable() {
+					public void run() { ret[0] = getBundleMap(); }
+				});
+				return ret[0];
+			} catch (Exception e) {
+				BundleMap ret = new BundleMap();
+				ret.invalidate();
+				return ret;
+			}
 		}
-		return ret;
 	}
 
 	Iterator<? extends Component> getComponents() {
@@ -742,7 +744,7 @@ class CircuitWires {
 	// query methods
 	//
 	boolean isMapVoided() {
-		return bundleMap == null;
+		return masterBundleMap == null;
 	}
 
 	//
@@ -870,7 +872,7 @@ class CircuitWires {
 		return bds;
 	}
 
-	void remove(Component comp) {
+	/*synchronized*/ void remove(Component comp) {
 		if (comp instanceof Wire) {
 			removeWire((Wire) comp);
 		} else if (comp instanceof Splitter) {
@@ -889,7 +891,7 @@ class CircuitWires {
 		voidBundleMap();
 	}
 
-	void remove(Component comp, EndData end) {
+	/*synchronized*/ void remove(Component comp, EndData end) {
 		points.remove(comp, end);
 		voidBundleMap();
 	}
@@ -908,7 +910,7 @@ class CircuitWires {
 		}
 	}
 
-	void replace(Component comp, EndData oldEnd, EndData newEnd) {
+	/*synchronized*/ void replace(Component comp, EndData oldEnd, EndData newEnd) {
 		points.remove(comp, oldEnd);
 		points.add(comp, newEnd);
 		voidBundleMap();
@@ -918,6 +920,9 @@ class CircuitWires {
 	// helper methods
 	//
 	private void voidBundleMap() {
-		bundleMap = null;
+		// This should really only be called by AWT thread, but main() also
+		// calls it during startup. It should not be called by the simulation
+		// thread.
+		masterBundleMap = null;
 	}
 }

@@ -33,8 +33,9 @@ import java.util.LinkedList;
 
 import com.cburch.logisim.circuit.Simulator;
 import com.cburch.logisim.util.SocketClient;
+import com.cburch.logisim.util.UniquelyNamedThread;
 
-public class TclWrapperListenerThread extends Thread {
+public class TclWrapperListenerThread extends UniquelyNamedThread {
 
 	SocketClient socket;
 	LinkedList<String> messages;
@@ -43,6 +44,7 @@ public class TclWrapperListenerThread extends Thread {
 	Boolean socket_open = true;
 
 	TclWrapperListenerThread(SocketClient socket, Simulator simulator) {
+		super("TclWrapperListenerThread");
 		this.socket = socket;
 		this.messages = new LinkedList<String>();
 		this.sim = simulator;
