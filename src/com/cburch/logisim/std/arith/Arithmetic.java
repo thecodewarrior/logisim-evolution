@@ -92,6 +92,9 @@ public class Arithmetic extends Library {
 			new FactoryDescription("FloatConverter",
 					Strings.getter("floatConverterComponent"), "floatconverer.gif",
 					"FloatConverter"),
+			new FactoryDescription("ErrorDetector",
+					Strings.getter("errorDetectorComponent"), "errordetector.gif",
+					"ErrorDetector"),
 	};
 
 	private List<Tool> tools = null;
