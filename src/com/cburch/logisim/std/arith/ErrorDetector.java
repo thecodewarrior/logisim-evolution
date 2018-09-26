@@ -138,7 +138,8 @@ public class ErrorDetector extends InstanceFactory {
         Direction facing = painter.getInstance().getAttributeValue(StdAttr.FACING);
         if(facing == Direction.NORTH || facing == Direction.SOUTH) facing = facing.reverse();
 
-        painter.drawPort(1, " ! ", facing);
+        painter.drawPort(0, "", facing.reverse());
+        painter.drawPort(1, "!!", facing);
 
         painter.drawLabel();
     }
@@ -149,10 +150,6 @@ public class ErrorDetector extends InstanceFactory {
         Value out;
         if(in.isErrorValue()) {
             out = Value.TRUE;
-        } else if(in.isUnknown()) {
-            out = Value.UNKNOWN;
-        } else if(in.isFullyDefined()) {
-            out = Value.FALSE;
         } else {
             out = Value.UNKNOWN;
         }
