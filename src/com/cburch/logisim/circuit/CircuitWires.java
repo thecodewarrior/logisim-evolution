@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.SwingUtilities;
 
 import org.slf4j.Logger;
@@ -205,7 +206,7 @@ class CircuitWires {
 	// derived data
 	private Bounds bounds = Bounds.EMPTY_BOUNDS;
 
-	private BundleMap masterBundleMap = null;
+	private final AtomicReference<BundleMap> masterBundleMap = new AtomicReference<>(null);
 
 	CircuitWires() {
 	}
@@ -627,14 +628,16 @@ class CircuitWires {
 	// create the new bundle map.
 
 	/*synchronized*/ private BundleMap getBundleMap() {
+	    BundleMap existing = masterBundleMap.get();
+		if (existing != null)
+			return existing;
+
 		if (SwingUtilities.isEventDispatchThread()) {
 			// AWT event thread.
-			if (masterBundleMap != null)
-				return masterBundleMap;
 			BundleMap ret = new BundleMap();
 			try {
 				computeBundleMap(ret);
-				masterBundleMap = ret;
+				masterBundleMap.set(ret);
 			} catch (Exception t) {
 				ret.invalidate();
 				logger.error("{}", t.getLocalizedMessage());
@@ -744,7 +747,7 @@ class CircuitWires {
 	// query methods
 	//
 	boolean isMapVoided() {
-		return masterBundleMap == null;
+		return masterBundleMap.get() == null;
 	}
 
 	//
@@ -923,6 +926,6 @@ class CircuitWires {
 		// This should really only be called by AWT thread, but main() also
 		// calls it during startup. It should not be called by the simulation
 		// thread.
-		masterBundleMap = null;
+		masterBundleMap.set(null);
 	}
 }
