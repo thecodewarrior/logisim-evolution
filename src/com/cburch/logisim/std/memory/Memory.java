@@ -66,7 +66,10 @@ public class Memory extends Library {
 			new FactoryDescription("RAM", Strings.getter("ramComponent"),
 					"ram.gif", "Ram"),
 			new FactoryDescription("ROM", Strings.getter("romComponent"),
-					"rom.gif", "Rom"), };
+					"rom.gif", "Rom"),
+			new FactoryDescription("Register Block", Strings.getter("registerBlockComponent"),
+					"rom.gif", "RegisterBlock"),
+	};
 
 	private List<Tool> tools = null;
 
