@@ -220,23 +220,24 @@ public class RegisterBlock extends InstanceFactory {
         // now that everything has been updated, push those values to the outputs
 		for (int i = 0; i < portCount; i++) {
 			Value addressValue = state.getPortValue(ports.portIndex(i, ADDRESS));
-			if (addressValue.isFullyDefined()) {
-				int address = addressValue.toIntValue();
+			if (!addressValue.isUnknown()) {
+				int address = addressValue.isErrorValue() ? -1 : addressValue.toIntValue();
 
 				Value storedValue;
+
 				if(address < 0 || address >= registerCount)
+					storedValue = Value.createError(dataWidth);
+				else if(addressValue.isErrorValue())
 					storedValue = Value.createError(dataWidth);
 				else
 					storedValue = data.getValues()[address];
+
 				if (state.getPortValue(ports.portIndex(i, READ_ENABLE)) != Value.FALSE) {
 					state.setPort(ports.portIndex(i, OUTPUT), storedValue, DELAY);
 				} else {
 					state.setPort(ports.portIndex(i, OUTPUT), Value.createUnknown(dataWidth), DELAY);
 				}
 				state.setPort(ports.portIndex(i, VALUE), storedValue, DELAY);
-			} else if (addressValue.isErrorValue()) {
-				state.setPort(ports.portIndex(i, OUTPUT), Value.createError(dataWidth), DELAY);
-				state.setPort(ports.portIndex(i, VALUE), Value.createError(dataWidth), DELAY);
 			} else {
 				state.setPort(ports.portIndex(i, OUTPUT), Value.createUnknown(dataWidth), DELAY);
 				state.setPort(ports.portIndex(i, VALUE), Value.createUnknown(dataWidth), DELAY);
