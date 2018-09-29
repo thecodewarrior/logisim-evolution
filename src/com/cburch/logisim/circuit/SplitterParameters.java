@@ -49,8 +49,8 @@ class SplitterParameters {
 	private int valign;
 
 	SplitterParameters(SplitterAttributes attrs) {
-
 		Object appear = attrs.appear;
+		int spacing = attrs.spacing == SplitterAttributes.SPACING_DOUBLE ? 20 : 10;
 		int fanout = attrs.fanout;
 		Direction facing = attrs.facing;
 
@@ -68,14 +68,14 @@ class SplitterParameters {
 		int offs = 6;
 		if (facing == Direction.NORTH || facing == Direction.SOUTH) { // ^ or V
 			int m = facing == Direction.NORTH ? 1 : -1;
-			dxEnd0 = justify == 0 ? 10 * ((fanout + 1) / 2 - 1)
-					: m * justify < 0 ? -10 : 10 * fanout;
+			dxEnd0 = justify == 0 ? spacing * ((fanout + 1) / 2 - 1)
+					: m * justify < 0 ? -spacing : spacing * fanout;
 			dyEnd0 = -m * width;
-			ddxEnd = -10;
+			ddxEnd = -spacing;
 			ddyEnd = 0;
 			dxEndSpine = 0;
 			dyEndSpine = m * (width - offs);
-			dxSpine0 = m * justify * (10 * fanout - 1);
+			dxSpine0 = m * justify * (spacing * fanout - 1);
 			dySpine0 = -m * offs;
 			dxSpine1 = m * justify * offs;
 			dySpine1 = -m * offs;
@@ -86,14 +86,14 @@ class SplitterParameters {
 		} else { // > or <
 			int m = facing == Direction.WEST ? -1 : 1;
 			dxEnd0 = m * width;
-			dyEnd0 = justify == 0 ? -10 * (fanout / 2) : m * justify > 0 ? 10
-					: -10 * fanout;
+			dyEnd0 = justify == 0 ? -spacing * (fanout / 2) : m * justify > 0 ? spacing
+					: -spacing * fanout;
 			ddxEnd = 0;
-			ddyEnd = 10;
+			ddyEnd = spacing;
 			dxEndSpine = -m * (width - offs);
 			dyEndSpine = 0;
 			dxSpine0 = m * offs;
-			dySpine0 = m * justify * (10 * fanout - 1);
+			dySpine0 = m * justify * (spacing * fanout - 1);
 			dxSpine1 = m * offs;
 			dySpine1 = m * justify * offs;
 			textAngle = 0;
