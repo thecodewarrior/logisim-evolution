@@ -125,7 +125,7 @@ public class RegisterBlock extends InstanceFactory {
 				}
 		);
 		setKeyConfigurator(new BitWidthConfigurator(StdAttr.WIDTH));
-		setIconName("register.gif");
+		setIconName("registerBlock.gif");
 	}
 
 	void computePorts(Instance instance) {

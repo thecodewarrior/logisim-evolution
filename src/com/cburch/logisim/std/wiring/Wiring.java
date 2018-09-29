@@ -71,7 +71,11 @@ public class Wiring extends Library {
 					"transmis.gif", "TransmissionGate"),
 			new FactoryDescription("Bit Extender",
 					Strings.getter("extenderComponent"), "extender.gif",
-					"BitExtender"), };
+					"BitExtender"),
+			new FactoryDescription("Mini Bit Extender",
+					Strings.getter("miniExtenderComponent"), "extender.gif",
+					"MiniBitExtender"),
+	};
 
 	private List<Tool> tools = null;
 
