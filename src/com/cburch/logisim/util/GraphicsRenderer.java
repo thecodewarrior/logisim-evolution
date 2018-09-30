@@ -320,17 +320,6 @@ public class GraphicsRenderer {
 	}
 
 	public void presetValue(Value value, int halign, int valign) {
-		final int marginX = 3;
-		final int marginY = 1;
-
-		int shiftX = 0;
-		int shiftY = 0;
-		if(halign == H_LEFT) shiftX = marginX;
-		if(halign == H_RIGHT) shiftX = -marginX;
-		if(valign == V_TOP) shiftY = marginY;
-		if(valign == V_BOTTOM) shiftY = -marginY;
-
-		move(shiftX, shiftY);
 		int bits = value.getBitWidth().getWidth();
 		String str = "";
 		if (value.isFullyDefined()) {
@@ -344,6 +333,21 @@ public class GraphicsRenderer {
 			for (int i = 0 ; i < len ; i++)
 				str = str.concat("?");
 		}
+		presetTextOnPlate(str, halign, valign);
+	}
+
+	public void presetTextOnPlate(String str, int halign, int valign) {
+		final int marginX = 3;
+		final int marginY = 1;
+
+		int shiftX = 0;
+		int shiftY = 0;
+		if(halign == H_LEFT) shiftX = marginX;
+		if(halign == H_RIGHT) shiftX = -marginX;
+		if(valign == V_TOP) shiftY = marginY;
+		if(valign == V_BOTTOM) shiftY = -marginY;
+
+		move(shiftX, shiftY);
 		Rectangle bounds = getTextBounds(str, halign, valign);
 		color(Color.lightGray);
 		fill(new Rectangle(bounds.x - marginX, bounds.y - marginY, bounds.width + 2*marginX, bounds.height + 2*marginY));
@@ -352,4 +356,5 @@ public class GraphicsRenderer {
 
 		move(-shiftX, -shiftY);
 	}
+
 }

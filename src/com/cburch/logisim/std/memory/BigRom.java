@@ -36,6 +36,7 @@ import com.cburch.logisim.tools.key.BitWidthConfigurator;
 import com.cburch.logisim.util.GraphicsRenderer;
 import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.StringGetter;
+import com.cburch.logisim.util.StringUtil;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -48,9 +49,23 @@ public class BigRom extends InstanceFactory {
 		BigRomContents contents = painter.getAttributeValue(BigRomContents.ATTR_CONTENTS);
 
 		GraphicsRenderer g = new GraphicsRenderer(painter.getGraphics(), x, y);
-		int width = Math.max(ports.addressPortWidths.length, ports.valuePortWidths.length) * 10 + 10;
 		g.switchToWidth(2);
-		g.run("m 0,-10 l " + width + ",0 l 0,20 l -" + width + ",0 l 0,-20");
+		g.run("l " + ports.chipWidth() + ",0 l 0,50 l -" + ports.chipWidth() + ",0 l 0,-50");
+
+		g.move(5,5);
+		int addressLen = (ports.addressWidth + 3) / 4;
+		g.presetTextOnPlate(
+				String.format("%1$" + addressLen + "s", contents.address.toString(16)).replace(' ', '0'),
+				GraphicsRenderer.H_LEFT,
+				GraphicsRenderer.V_TOP
+		);
+		g.move(0, 40);
+		int valueLen = (ports.valueWidth + 3) / 4;
+		g.presetTextOnPlate(
+				String.format("%1$" + valueLen + "s", contents.getCurrent().toString(16)).replace(' ', '0'),
+				GraphicsRenderer.H_LEFT,
+				GraphicsRenderer.V_BOTTOM
+		);
 	}
 
 	static final int DELAY = 10;
@@ -96,7 +111,7 @@ public class BigRom extends InstanceFactory {
     @Override
     public Bounds getOffsetBounds(AttributeSet attrs) {
 		BigRomPorts ports = new BigRomPorts(attrs.getValue(ATTR_ADDRESS_WIDTH), attrs.getValue(ATTR_VALUE_WIDTH));
-        return Bounds.create(0, -10, Math.max(ports.addressPortWidths.length, ports.valuePortWidths.length) * 10 + 10, 20);
+        return Bounds.create(0, 0, ports.chipWidth(), 50);
     }
 
     @Override
@@ -196,11 +211,11 @@ public class BigRom extends InstanceFactory {
 			Port[] ports = new Port[addressPortWidths.length + valuePortWidths.length];
 
 			for (int i = 0; i < addressPortWidths.length; i++) {
-				ports[i] = setTooltip(new Port(10*i + 10, -10, Port.INPUT, Math.min(32, addressPortWidths[i])),
+				ports[i] = setTooltip(new Port(10*i + 10, 0, Port.INPUT, Math.min(32, addressPortWidths[i])),
 						Strings.getter("bigRomAddress"));
 			}
 			for (int i = 0; i < valuePortWidths.length; i++) {
-				ports[addressPortWidths.length + i] = setTooltip(new Port(10*i + 10, 10, Port.OUTPUT, Math.min(32, valuePortWidths[i])),
+				ports[addressPortWidths.length + i] = setTooltip(new Port(10*i + 10, 50, Port.OUTPUT, Math.min(32, valuePortWidths[i])),
 						Strings.getter("bigRomValue"));
 			}
 
@@ -210,6 +225,15 @@ public class BigRom extends InstanceFactory {
 		private Port setTooltip(Port port, StringGetter tooltip) {
 	    	port.setToolTip(tooltip);
 	    	return port;
+		}
+
+		private int chipWidth() {
+			int addressLen = (addressWidth + 3) / 4;
+			int valueLen = (valueWidth + 3) / 4;
+			int labelWidth = Math.max(addressLen, valueLen) * 9;
+			labelWidth = (labelWidth + 9)/10; // divide by 10 and round up
+			labelWidth *= 10; // multiply by 10 again. Now it's rounded up to a multiple of 10
+			return labelWidth + 10;
 		}
 	}
 }
