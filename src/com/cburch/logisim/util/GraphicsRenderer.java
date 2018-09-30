@@ -34,9 +34,12 @@ import com.cburch.logisim.data.Value;
 import com.cburch.logisim.instance.StdAttr;
 
 import java.awt.*;
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @SuppressWarnings("ConstantConditions")
 public class GraphicsRenderer {
@@ -57,29 +60,116 @@ public class GraphicsRenderer {
 		return new Vec2i(pos.x + offset.x, pos.y + offset.y);
 	}
 
-	public void run(String commands) {
-	    LinkedList<String> elements = new LinkedList<>(Arrays.asList(commands.trim().split("\\s+|\\s*,\\s*")));
-
-	    commandProcessing: while(elements.size() != 0) {
-	    	final String command = elements.poll();
-	    	switch(command) {
-				case "M":
-					moveAbsolute(Integer.parseInt(elements.poll()), Integer.parseInt(elements.poll()));
-					break;
-				case "m":
-					move(Integer.parseInt(elements.poll()), Integer.parseInt(elements.poll()));
-					break;
-				case "L":
-					lineToAbsolute(Integer.parseInt(elements.poll()), Integer.parseInt(elements.poll()));
-					break;
-				case "l":
-					lineTo(Integer.parseInt(elements.poll()), Integer.parseInt(elements.poll()));
-					break;
-				default:
-				    System.out.println("Error: unknown command name " + command);
-					break commandProcessing;
+	public void run(String input) {
+		String commands = input.trim();
+		Rewriter expander = new Rewriter("\\{([^{}]*)}\\s*\\*\\s*(\\d+)") {
+			public String replacement() {
+				return String.join(" ", Collections.nCopies(Integer.valueOf(group(2)), group(1)));
 			}
+		};
+		try {
+			while(true) {
+				String expanded = expander.rewrite(commands);
+				if(expanded.equals(commands)) {
+					commands = expanded;
+					break;
+				} else {
+					commands = expanded;
+				}
+			}
+		} catch(NumberFormatException e) {
+			new RuntimeException("Error expanding `" + commands + "`").printStackTrace();
 		}
+
+		if(commands.length() == 0) return;
+		List<String> allElements = Arrays.asList(commands.split("\\s+|\\s*,\\s*"));
+	    LinkedList<String> elements = new LinkedList<>(allElements);
+
+	    try {
+			commandProcessing:
+			while (elements.size() != 0) {
+				final String command = elements.poll();
+				try {
+					switch (command) {
+						case "M":
+							moveAbsolute(Integer.parseInt(elements.poll()), Integer.parseInt(elements.poll()));
+							break;
+						case "m":
+							move(Integer.parseInt(elements.poll()), Integer.parseInt(elements.poll()));
+							break;
+						case "L":
+							lineToAbsolute(Integer.parseInt(elements.poll()), Integer.parseInt(elements.poll()));
+							break;
+						case "l":
+							lineTo(Integer.parseInt(elements.poll()), Integer.parseInt(elements.poll()));
+							break;
+						case "w":
+							switchToWidth(Integer.parseInt(elements.poll()));
+							break;
+						case "s":
+							pushPosition();
+							break;
+						case "r":
+							popPosition();
+							break;
+						case "e":
+							drawEllipse(Integer.parseInt(elements.poll()), Integer.parseInt(elements.poll()));
+							break;
+						case "a":
+							drawCenteredArc(Integer.parseInt(elements.poll()), Integer.parseInt(elements.poll()), Integer.parseInt(elements.poll()));
+							break;
+						case "t":
+							String align = elements.poll();
+							int halign;
+							switch(align.charAt(0)) {
+								case '|':
+									halign = H_CENTER;
+									break;
+								case '<':
+									halign = H_LEFT;
+									break;
+								case '>':
+									halign = H_RIGHT;
+									break;
+								default:
+									halign = H_CENTER;
+							}
+							int valign;
+							switch(align.charAt(1)) {
+								case '-':
+									valign = V_CENTER;
+									break;
+								case '^':
+									valign = V_TOP;
+									break;
+								case 'v':
+									valign = V_BOTTOM;
+									break;
+								default:
+									valign = V_CENTER;
+							}
+							float size = Float.parseFloat(elements.poll());
+							String text = elements.poll();
+							Font font = graphics.getFont();
+							if(size != 0) {
+								font = font.deriveFont(size);
+							}
+							drawText(font, text, halign, valign);
+							break;
+						default:
+							System.out.println("Error: unknown command name " + command);
+							break commandProcessing;
+					}
+				} catch (NullPointerException e) {
+					System.err.println("Missing parameter when running GraphicsRenderer command " + command);
+					break;
+				}
+			}
+		} catch(NumberFormatException e) {
+	        int i = allElements.size() - 1 - elements.size();
+	    	System.err.println("Error parsing `" + allElements.get(i) + "` (element " + i + ") as a number in GraphicsRenderer string `" + input + "`");
+		}
+
 		commit();
 	}
 
@@ -143,9 +233,9 @@ public class GraphicsRenderer {
 	}
 
 	public GraphicsRenderer commit() {
-		graphics.setColor(color);
+	    useSettings();
 		if(polyline.size() != 0) {
-		    useWidth();
+		    useSettings();
 			graphics.drawPolyline(
 			        polyline.stream().mapToInt(i -> i.x).toArray(),
 					polyline.stream().mapToInt(i -> i.y).toArray(),
@@ -158,15 +248,18 @@ public class GraphicsRenderer {
 
 	public GraphicsRenderer fill(Rectangle rectangle) {
 	    commit();
-		graphics.setColor(color);
 		graphics.fillRect(rectangle.x + getPos().x, rectangle.y + getPos().y, rectangle.width, rectangle.height);
 		return this;
 	}
 
 	public void drawCenteredArc(int r, int start, int dist) {
 		commit();
-		graphics.setColor(color);
 		graphics.drawArc(getPos().x - r, getPos().y - r, 2 * r, 2 * r, start, dist);
+	}
+
+	public void drawEllipse(int rx, int ry) {
+	    commit();
+		graphics.drawOval(getPos().x-rx, getPos().y-ry, rx*2, ry*2);
 	}
 
 	public void drawCenteredText(String text) {
@@ -276,11 +369,12 @@ public class GraphicsRenderer {
 		return ret;
 	}
 
-	public void useWidth() {
+	public void useSettings() {
 		if (graphics instanceof Graphics2D) {
 			Graphics2D g2 = (Graphics2D) graphics;
 			g2.setStroke(new BasicStroke((float) width));
 		}
+		graphics.setColor(color);
 	}
 
 	public void switchToWidth(int width) {
@@ -311,8 +405,8 @@ public class GraphicsRenderer {
 		}
 		if (attr.equals(StdAttr.TRIG_FALLING) || attr.equals(StdAttr.TRIG_LOW)) {
 			switchToWidth(2);
-			useWidth();
-			graphics.drawOval(getPos().x-10, getPos().y-5, 10, 10);
+			useSettings();
+			run("m 0,-5 e 5,5");
 		} else {
 			switchToWidth(2);
 			run("l -10,0 m 10,0");

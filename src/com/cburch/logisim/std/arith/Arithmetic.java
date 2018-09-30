@@ -95,6 +95,9 @@ public class Arithmetic extends Library {
 			new FactoryDescription("ErrorDetector",
 					Strings.getter("errorDetectorComponent"), "errordetector.gif",
 					"ErrorDetector"),
+			new FactoryDescription("ALU",
+					Strings.getter("aluComponent"), "alu.gif",
+					"ALU"),
 	};
 
 	private List<Tool> tools = null;
