@@ -230,7 +230,7 @@ public class BigRom extends InstanceFactory {
 		private int chipWidth() {
 			int addressLen = (addressWidth + 3) / 4;
 			int valueLen = (valueWidth + 3) / 4;
-			int labelWidth = Math.max(addressLen, valueLen) * 9;
+			int labelWidth = Math.max(addressLen, valueLen) * 8;
 			labelWidth = (labelWidth + 9)/10; // divide by 10 and round up
 			labelWidth *= 10; // multiply by 10 again. Now it's rounded up to a multiple of 10
 			return labelWidth + 10;
