@@ -211,11 +211,11 @@ public class BigRom extends InstanceFactory {
 			Port[] ports = new Port[addressPortWidths.length + valuePortWidths.length];
 
 			for (int i = 0; i < addressPortWidths.length; i++) {
-				ports[i] = setTooltip(new Port(10*i + 10, 0, Port.INPUT, Math.min(32, addressPortWidths[i])),
+				ports[i] = setTooltip(new Port(70*i + 10, 0, Port.INPUT, Math.min(32, addressPortWidths[i])),
 						Strings.getter("bigRomAddress"));
 			}
 			for (int i = 0; i < valuePortWidths.length; i++) {
-				ports[addressPortWidths.length + i] = setTooltip(new Port(10*i + 10, 50, Port.OUTPUT, Math.min(32, valuePortWidths[i])),
+				ports[addressPortWidths.length + i] = setTooltip(new Port(70*i + 10, 50, Port.OUTPUT, Math.min(32, valuePortWidths[i])),
 						Strings.getter("bigRomValue"));
 			}
 
