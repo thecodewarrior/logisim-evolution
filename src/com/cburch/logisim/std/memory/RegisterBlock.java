@@ -106,9 +106,9 @@ public class RegisterBlock extends InstanceFactory {
 	static final int DELAY = 8;
 
 	public static final Attribute<Integer> ATTR_REGISTER_COUNT = Attributes
-			.forIntegerRange("registerCount", Strings.getter("registerBlockRegisterCount"), 1, 16);
+			.forIntegerRange("registerCount", Strings.getter("registerBlockRegisterCount"), 1, 64);
 	public static final Attribute<Integer> ATTR_PORT_COUNT = Attributes
-			.forIntegerRange("portCount", Strings.getter("registerBlockPortCount"), 0, 8);
+			.forIntegerRange("portCount", Strings.getter("registerBlockPortCount"), 0, 32);
 
 	public RegisterBlock() {
 		super("RegisterBlock", Strings.getter("registerBlockComponent"));
