@@ -6,41 +6,29 @@ import com.cburch.logisim.std.arith.Strings;
 import com.cburch.logisim.tools.key.BitWidthConfigurator;
 import com.cburch.logisim.tools.key.JoinedConfigurator;
 import com.cburch.logisim.util.GraphicsRenderer;
-import com.cburch.logisim.util.Icons;
 
-import javax.swing.*;
 import java.awt.*;
 
-public class MiniBitExtender extends InstanceFactory {
+public class MiniBitSelector extends InstanceFactory {
     private static final Attribute<BitWidth> ATTR_IN_WIDTH = Attributes
-            .forBitWidth("in_width", Strings.getter("extenderInAttr"));
+            .forBitWidth("in_width", Strings.getter("miniSelectorInAttr"));
     private static final Attribute<BitWidth> ATTR_OUT_WIDTH = Attributes
-            .forBitWidth("out_width", Strings.getter("extenderOutAttr"));
-    static final Attribute<AttributeOption> ATTR_TYPE = Attributes.forOption(
-            "type",
-            Strings.getter("extenderTypeAttr"),
-            new AttributeOption[] {
-                    new AttributeOption("zero", "zero", Strings
-                            .getter("extenderZeroType")),
-                    new AttributeOption("one", "one", Strings
-                            .getter("extenderOneType")),
-                    new AttributeOption("sign", "sign", Strings
-                            .getter("extenderSignType")),
-            });
-
-    public MiniBitExtender() {
-        super("Mini Bit Extender", Strings.getter("miniExtenderComponent"));
+            .forBitWidth("out_width", Strings.getter("miniSelectorOutAttr"));
+    private static final Attribute<Integer> ATTR_FIRST_BIT = Attributes
+            .forIntegerRange("first_bit", Strings.getter("miniSelectorFirstBitAttr"), 0, 31);
+    public MiniBitSelector() {
+        super("Mini Bit Selector", Strings.getter("miniSelectorComponent"));
         setAttributes(new Attribute[] {
-                StdAttr.FACING, ATTR_IN_WIDTH, ATTR_OUT_WIDTH, ATTR_TYPE
+                StdAttr.FACING, ATTR_IN_WIDTH, ATTR_OUT_WIDTH, ATTR_FIRST_BIT
         }, new Object[] {
-                Direction.EAST, BitWidth.create(8), BitWidth.create(16), ATTR_TYPE.parse("sign")
+                Direction.EAST, BitWidth.create(16), BitWidth.create(8), 0
         });
 
         setFacingAttribute(StdAttr.FACING);
         setKeyConfigurator(JoinedConfigurator.create(new BitWidthConfigurator(
                 ATTR_OUT_WIDTH), new BitWidthConfigurator(ATTR_IN_WIDTH, 1,
                 Value.MAX_WIDTH, 0)));
-        setIconName("miniBitExtender.gif");
+        setIconName("miniBitSelector.gif");
     }
 
     //
@@ -63,11 +51,6 @@ public class MiniBitExtender extends InstanceFactory {
         instance.setPorts(ports);
     }
 
-    private String getType(AttributeSet attrs) {
-        AttributeOption topt = attrs.getValue(ATTR_TYPE);
-        return (String) topt.getValue();
-    }
-
     @Override
     public Bounds getOffsetBounds(AttributeSet attrs) {
         Direction facing = attrs.getValue(StdAttr.FACING);
@@ -82,7 +65,7 @@ public class MiniBitExtender extends InstanceFactory {
 
     @Override
     protected void instanceAttributeChanged(Instance instance, Attribute<?> attr) {
-        if (attr == StdAttr.FACING || attr == ATTR_TYPE) {
+        if (attr == StdAttr.FACING || attr == ATTR_FIRST_BIT) {
             instance.recomputeBounds();
             configurePorts(instance);
             instance.fireInvalidated();
@@ -104,9 +87,8 @@ public class MiniBitExtender extends InstanceFactory {
         }
 
         GraphicsRenderer g = new GraphicsRenderer(graphics, 0, 0);
-        g.move(-30,0);
         g.switchToWidth(2);
-        g.run("m 0,-5 l 15,0 l 5,-5 l 10,0 l 0,20 l -10,0 l -5,-5 l -15,0 l 0,-10");
+        g.run("m 0,-5 l -15,0 l -5,-5 l -10,0 l 0,20 l 10,0 l 5,-5 l 15,0 l 0,-10");
 
         if (rotate != 0.0) {
             ((Graphics2D) graphics).rotate(-rotate);
@@ -137,22 +119,15 @@ public class MiniBitExtender extends InstanceFactory {
     public void propagate(InstanceState state) {
         Value in = state.getPortValue(1);
         BitWidth wout = state.getAttributeValue(ATTR_OUT_WIDTH);
-        String type = getType(state.getAttributeSet());
-        Value extend;
-        if (type.equals("one")) {
-            extend = Value.TRUE;
-        } else if (type.equals("sign")) {
-            int win = in.getWidth();
-            extend = win > 0 ? in.get(win - 1) : Value.ERROR;
-        } else if (type.equals("input")) {
-            extend = state.getPortValue(2);
-            if (extend.getWidth() != 1)
-                extend = Value.ERROR;
+        if(in.isFullyDefined()) {
+            long value = in.toLongValue();
+            value = value >> state.getAttributeValue(ATTR_FIRST_BIT);
+            value = value & (1L << wout.getWidth() - 1);
+            state.setPort(0, Value.createKnown(wout, (int)value), 1);
+        } else if(in.isUnknown()) {
+            state.setPort(0, Value.createUnknown(wout), 1);
         } else {
-            extend = Value.FALSE;
+            state.setPort(0, Value.createError(wout), 1);
         }
-
-        Value out = in.extendWidth(wout.getWidth(), extend);
-        state.setPort(0, out, 1);
     }
 }

@@ -38,6 +38,7 @@ import com.cburch.logisim.data.AttributeSet;
 public abstract class NumericConfigurator<V> implements KeyConfigurator,
 		Cloneable {
 	private static final int MAX_TIME_KEY_LASTS = 800;
+	private static final String MAC_ALT_NUMBERS = "º¡™£¢∞§¶•ª";
 
 	private Attribute<V> attr;
 	private int minValue;
@@ -91,6 +92,9 @@ public abstract class NumericConfigurator<V> implements KeyConfigurator,
 		if (event.getType() == KeyConfigurationEvent.KEY_TYPED) {
 			KeyEvent e = event.getKeyEvent();
 			int digit = Character.digit(e.getKeyChar(), radix);
+			if(digit == -1) {
+				digit = MAC_ALT_NUMBERS.indexOf(e.getKeyChar());
+			}
 			if (digit >= 0 && e.getModifiersEx() == modsEx) {
 				long now = System.currentTimeMillis();
 				long sinceLast = now - whenTyped;

@@ -73,8 +73,11 @@ public class Wiring extends Library {
 					Strings.getter("extenderComponent"), "extender.gif",
 					"BitExtender"),
 			new FactoryDescription("Mini Bit Extender",
-					Strings.getter("miniExtenderComponent"), "extender.gif",
+					Strings.getter("miniExtenderComponent"), "miniBitExtender.gif",
 					"MiniBitExtender"),
+			new FactoryDescription("Mini Bit Selector",
+					Strings.getter("miniSelectorComponent"), "miniBitSelector.gif",
+					"MiniBitSelector"),
 	};
 
 	private List<Tool> tools = null;

@@ -108,7 +108,7 @@ public class RegisterBank extends InstanceFactory {
 			.forIntegerRange("portCount", Strings.getter("registerBankPortCount"), 0, 32);
 
 	public RegisterBank() {
-		super("RegisterBlock", Strings.getter("registerBankComponent"));
+		super("Register Bank", Strings.getter("registerBankComponent"));
 		setAttributes(
 				new Attribute[] {
 						StdAttr.WIDTH, StdAttr.TRIGGER,
@@ -178,9 +178,8 @@ public class RegisterBank extends InstanceFactory {
 		int portCount = state.getAttributeValue(ATTR_PORT_COUNT);
 		RegisterBlockPorts ports = new RegisterBlockPorts(registerCount, portCount);
 		Object triggerType = state.getAttributeValue(StdAttr.TRIGGER);
-		RegisterBankData data = (RegisterBankData) state.getData();
 
-		fixData(state);
+		RegisterBankData data = fixData(state);
 
 		boolean triggered = data.updateClock(state.getPortValue(RegisterBlockPorts.clock), triggerType);
         boolean isReset = state.getPortValue(RegisterBlockPorts.globalReset) == Value.TRUE;

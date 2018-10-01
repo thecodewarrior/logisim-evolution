@@ -33,6 +33,8 @@ package com.cburch.logisim.std.wiring;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 
 import javax.swing.Icon;
 
@@ -52,6 +54,10 @@ import com.cburch.logisim.instance.InstanceState;
 import com.cburch.logisim.instance.Port;
 import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.prefs.AppPreferences;
+import com.cburch.logisim.tools.key.DirectionConfigurator;
+import com.cburch.logisim.tools.key.KeyConfigurationEvent;
+import com.cburch.logisim.tools.key.KeyConfigurationResult;
+import com.cburch.logisim.tools.key.KeyConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.Icons;
 
@@ -64,18 +70,15 @@ public class PullResistor extends InstanceFactory {
 	public static Value getPullValue(Instance instance) {
 		return getPullValue(instance.getAttributeSet());
 	}
+	public static AttributeOption PULL_TYPE_ZERO = new AttributeOption(Value.FALSE, "0", Strings.getter("pullZeroType"));
+	public static AttributeOption PULL_TYPE_ONE = new AttributeOption(Value.TRUE, "1", Strings.getter("pullOneType"));
+	public static AttributeOption PULL_TYPE_ERROR = new AttributeOption(Value.ERROR, "X", Strings.getter("pullErrorType"));
 
 	public static final Attribute<AttributeOption> ATTR_PULL_TYPE = Attributes
 			.forOption(
 					"pull",
 					Strings.getter("pullTypeAttr"),
-					new AttributeOption[] {
-							new AttributeOption(Value.FALSE, "0", Strings
-									.getter("pullZeroType")),
-							new AttributeOption(Value.TRUE, "1", Strings
-									.getter("pullOneType")),
-							new AttributeOption(Value.ERROR, "X", Strings
-									.getter("pullErrorType")) });
+					new AttributeOption[] { PULL_TYPE_ZERO, PULL_TYPE_ONE, PULL_TYPE_ERROR });
 	public static final PullResistor FACTORY = new PullResistor();
 
 	private static final Icon ICON_SHAPED = Icons.getIcon("pullshap.gif");
@@ -85,8 +88,9 @@ public class PullResistor extends InstanceFactory {
 	public PullResistor() {
 		super("Pull Resistor", Strings.getter("pullComponent"));
 		setAttributes(new Attribute[] { StdAttr.FACING, ATTR_PULL_TYPE },
-				new Object[] { Direction.SOUTH, ATTR_PULL_TYPE.parse("0") });
+				new Object[] { Direction.SOUTH, PULL_TYPE_ZERO });
 		setFacingAttribute(StdAttr.FACING);
+		setKeyConfigurator(new PullDirectionConfigurator());
 	}
 
 	//
@@ -208,4 +212,40 @@ public class PullResistor extends InstanceFactory {
 	public void propagate(InstanceState state) {
 		; // nothing to do - handled by CircuitWires
 	}
+
+
+	public class PullDirectionConfigurator implements KeyConfigurator, Cloneable {
+		private int modsEx = InputEvent.ALT_DOWN_MASK;
+
+		@SuppressWarnings("MethodDoesntCallSuperMethod")
+		@Override
+		public PullDirectionConfigurator clone() {
+			return this;
+		}
+
+		public KeyConfigurationResult keyEventReceived(KeyConfigurationEvent event) {
+			if (event.getType() == KeyConfigurationEvent.KEY_PRESSED) {
+				KeyEvent e = event.getKeyEvent();
+				if (e.getModifiersEx() == modsEx) {
+					AttributeOption value = null;
+					switch (e.getKeyCode()) {
+						case KeyEvent.VK_UP:
+						case KeyEvent.VK_F:
+							value = PULL_TYPE_ONE;
+							break;
+						case KeyEvent.VK_DOWN:
+						case KeyEvent.VK_D:
+							value = PULL_TYPE_ZERO;
+							break;
+					}
+					if (value != null) {
+						event.consume();
+						return new KeyConfigurationResult(event, ATTR_PULL_TYPE, value);
+					}
+				}
+			}
+			return null;
+		}
+	}
+
 }
