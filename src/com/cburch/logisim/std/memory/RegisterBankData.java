@@ -35,11 +35,11 @@ import com.cburch.logisim.data.Value;
 import com.cburch.logisim.instance.InstanceData;
 import com.cburch.logisim.prefs.AppPreferences;
 
-class RegisterBlockData extends ClockState implements InstanceData {
+class RegisterBankData extends ClockState implements InstanceData {
 	Value[] value;
 	BitWidth width;
 
-	public RegisterBlockData(BitWidth width, int count) {
+	public RegisterBankData(BitWidth width, int count) {
         this.width = width;
 		value = new Value[count];
 		for (int i = 0; i < count; i++) {

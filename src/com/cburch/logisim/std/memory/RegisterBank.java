@@ -36,15 +36,12 @@ import com.cburch.logisim.tools.key.BitWidthConfigurator;
 import com.cburch.logisim.util.GraphicsRenderer;
 import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.StringGetter;
-import com.cburch.logisim.util.StringUtil;
 
-import java.awt.*;
+import static com.cburch.logisim.std.memory.RegisterBank.PortType.*;
 
-import static com.cburch.logisim.std.memory.RegisterBlock.PortType.*;
-
-public class RegisterBlock extends InstanceFactory {
+public class RegisterBank extends InstanceFactory {
 	public static void draw(InstancePainter painter, int x, int y) {
-        RegisterBlockData data = fixData(painter);
+        RegisterBankData data = fixData(painter);
 		RegisterBlockPorts ports = new RegisterBlockPorts(painter.getAttributeValue(ATTR_REGISTER_COUNT), painter.getAttributeValue(ATTR_PORT_COUNT));
 
 		GraphicsRenderer g = new GraphicsRenderer(painter.getGraphics(), x, y);
@@ -106,12 +103,12 @@ public class RegisterBlock extends InstanceFactory {
 	static final int DELAY = 8;
 
 	public static final Attribute<Integer> ATTR_REGISTER_COUNT = Attributes
-			.forIntegerRange("registerCount", Strings.getter("registerBlockRegisterCount"), 1, 64);
+			.forIntegerRange("registerCount", Strings.getter("registerBankRegisterCount"), 1, 64);
 	public static final Attribute<Integer> ATTR_PORT_COUNT = Attributes
-			.forIntegerRange("portCount", Strings.getter("registerBlockPortCount"), 0, 32);
+			.forIntegerRange("portCount", Strings.getter("registerBankPortCount"), 0, 32);
 
-	public RegisterBlock() {
-		super("RegisterBlock", Strings.getter("registerBlockComponent"));
+	public RegisterBank() {
+		super("RegisterBlock", Strings.getter("registerBankComponent"));
 		setAttributes(
 				new Attribute[] {
 						StdAttr.WIDTH, StdAttr.TRIGGER,
@@ -125,7 +122,7 @@ public class RegisterBlock extends InstanceFactory {
 				}
 		);
 		setKeyConfigurator(new BitWidthConfigurator(StdAttr.WIDTH));
-		setIconName("registerBlock.gif");
+		setIconName("registerBank.gif");
 	}
 
 	void computePorts(Instance instance) {
@@ -181,7 +178,7 @@ public class RegisterBlock extends InstanceFactory {
 		int portCount = state.getAttributeValue(ATTR_PORT_COUNT);
 		RegisterBlockPorts ports = new RegisterBlockPorts(registerCount, portCount);
 		Object triggerType = state.getAttributeValue(StdAttr.TRIGGER);
-		RegisterBlockData data = (RegisterBlockData) state.getData();
+		RegisterBankData data = (RegisterBankData) state.getData();
 
 		fixData(state);
 
@@ -256,24 +253,24 @@ public class RegisterBlock extends InstanceFactory {
 
 	}
 
-	private static RegisterBlockData fixData(InstancePainter painter) {
+	private static RegisterBankData fixData(InstancePainter painter) {
 	    BitWidth width = painter.getAttributeValue(StdAttr.WIDTH);
 	    int registerCount = painter.getAttributeValue(ATTR_REGISTER_COUNT);
-	    RegisterBlockData data = (RegisterBlockData)painter.getData();
+	    RegisterBankData data = (RegisterBankData)painter.getData();
         if (data == null) {
-            data = new RegisterBlockData(width, registerCount);
+            data = new RegisterBankData(width, registerCount);
             painter.setData(data);
         }
         data.ensureSize(width, registerCount);
         return data;
     }
 
-    private static RegisterBlockData fixData(InstanceState state) {
+    private static RegisterBankData fixData(InstanceState state) {
         BitWidth width = state.getAttributeValue(StdAttr.WIDTH);
         int registerCount = state.getAttributeValue(ATTR_REGISTER_COUNT);
-        RegisterBlockData data = (RegisterBlockData)state.getData();
+        RegisterBankData data = (RegisterBankData)state.getData();
         if (data == null) {
-            data = new RegisterBlockData(width, registerCount);
+            data = new RegisterBankData(width, registerCount);
             state.setData(data);
         }
         data.ensureSize(width, registerCount);
@@ -311,42 +308,42 @@ public class RegisterBlock extends InstanceFactory {
 		Port[] computePorts() {
 			Port[] ports = new Port[size()];
 			ports[0] = setTooltip(new Port(-10, 20, Port.INPUT, 1),
-					Strings.getter("registerBlockClockTooltip"));
+					Strings.getter("registerBankClockTooltip"));
 			ports[1] = setTooltip(new Port(-10, 10, Port.INPUT, 1),
-					Strings.getter("registerBlockGlobalResetTooltip"));
+					Strings.getter("registerBankGlobalResetTooltip"));
 
 			for (int i = 0; i < registerCount; i++) {
 				int y = 30+40*i;
 				ports[registerIndex(i, WRITE_ENABLE)] = setTooltip(new Port(  0, y+10, Port.INPUT, 1),
-						Strings.getter("registerBlockWriteEnableTooltip"));
+						Strings.getter("registerBankWriteEnableTooltip"));
 				ports[registerIndex(i, READ_ENABLE )] = setTooltip(new Port(100, y+10, Port.INPUT, 1),
-						Strings.getter("registerBlockReadEnableTooltip"));
+						Strings.getter("registerBankReadEnableTooltip"));
 				ports[registerIndex(i, RESET       )] = setTooltip(new Port( 10, y+20, Port.INPUT, 1),
-						Strings.getter("registerBlockResetTooltip"));
+						Strings.getter("registerBankResetTooltip"));
 				ports[registerIndex(i, INPUT       )] = setTooltip(new Port(  0, y+30, Port.INPUT, StdAttr.WIDTH),
-						Strings.getter("registerBlockInputTooltip"));
+						Strings.getter("registerBankInputTooltip"));
 				ports[registerIndex(i, OUTPUT      )] = setTooltip(new Port(100, y+30, Port.OUTPUT, StdAttr.WIDTH),
-						Strings.getter("registerBlockOutputTooltip"));
+						Strings.getter("registerBankOutputTooltip"));
 				ports[registerIndex(i, VALUE       )] = setTooltip(new Port( 90, y+20, Port.OUTPUT, StdAttr.WIDTH),
-						Strings.getter("registerBlockValueTooltip"));
+						Strings.getter("registerBankValueTooltip"));
 			}
 
 			for (int i = 0; i < portCount; i++) {
 				int y = -40 -60*i;
 				ports[portIndex(i, WRITE_ENABLE)] = setTooltip(new Port(  0, y+10, Port.INPUT, 1),
-						Strings.getter("registerBlockWriteEnableTooltip"));
+						Strings.getter("registerBankWriteEnableTooltip"));
 				ports[portIndex(i, READ_ENABLE )] = setTooltip(new Port(100, y+10, Port.INPUT, 1),
-						Strings.getter("registerBlockReadEnableTooltip"));
+						Strings.getter("registerBankReadEnableTooltip"));
 				ports[portIndex(i, RESET       )] = setTooltip(new Port( 10, y+20, Port.INPUT, 1),
-						Strings.getter("registerBlockResetTooltip"));
+						Strings.getter("registerBankResetTooltip"));
 				ports[portIndex(i, INPUT       )] = setTooltip(new Port(  0, y+30, Port.INPUT, StdAttr.WIDTH),
-						Strings.getter("registerBlockInputTooltip"));
+						Strings.getter("registerBankInputTooltip"));
 				ports[portIndex(i, OUTPUT      )] = setTooltip(new Port(100, y+30, Port.OUTPUT, StdAttr.WIDTH),
-						Strings.getter("registerBlockOutputTooltip"));
+						Strings.getter("registerBankOutputTooltip"));
 				ports[portIndex(i, VALUE       )] = setTooltip(new Port( 90, y+20, Port.OUTPUT, StdAttr.WIDTH),
-						Strings.getter("registerBlockValueTooltip"));
+						Strings.getter("registerBankValueTooltip"));
 				ports[portIndex(i, ADDRESS     )] = setTooltip(new Port(-10, y-10, Port.INPUT, addressBits()),
-						Strings.getter("registerBlockAddressTooltip"));
+						Strings.getter("registerBankAddressTooltip"));
 			}
 
 			return ports;

@@ -211,19 +211,19 @@ public class BigRom extends InstanceFactory {
 			Port[] ports = new Port[addressPortWidths.length + valuePortWidths.length];
 
 			for (int i = 0; i < addressPortWidths.length; i++) {
-				ports[i] = setTooltip(new Port(70*i + 10, 0, Port.INPUT, Math.min(32, addressPortWidths[i])),
-						Strings.getter("bigRomAddress"));
+				ports[i] = setTooltip(new Port(60*i + 10, 0, Port.INPUT, Math.min(32, addressPortWidths[i])),
+						Strings.get("bigRomAddressTooltip", "" + i*32, "" + (i*32 + addressPortWidths[i] - 1)));
 			}
 			for (int i = 0; i < valuePortWidths.length; i++) {
-				ports[addressPortWidths.length + i] = setTooltip(new Port(70*i + 10, 50, Port.OUTPUT, Math.min(32, valuePortWidths[i])),
-						Strings.getter("bigRomValue"));
+				ports[addressPortWidths.length + i] = setTooltip(new Port(60*i + 10, 50, Port.OUTPUT, Math.min(32, valuePortWidths[i])),
+						Strings.get("bigRomValueTooltip", "" + i*32, "" + (i*32 + valuePortWidths[i] - 1)));
 			}
 
 			return ports;
 		}
 
-		private Port setTooltip(Port port, StringGetter tooltip) {
-	    	port.setToolTip(tooltip);
+		private Port setTooltip(Port port, String tooltip) {
+	    	port.setToolTip(new ConstantGetter(tooltip));
 	    	return port;
 		}
 
@@ -233,7 +233,20 @@ public class BigRom extends InstanceFactory {
 			int labelWidth = Math.max(addressLen, valueLen) * 8;
 			labelWidth = (labelWidth + 9)/10; // divide by 10 and round up
 			labelWidth *= 10; // multiply by 10 again. Now it's rounded up to a multiple of 10
-			return labelWidth + 10;
+			return labelWidth + 15;
+		}
+	}
+
+	private static class ConstantGetter implements StringGetter {
+		String value;
+
+		ConstantGetter(String value) {
+			this.value = value;
+		}
+
+		@Override
+		public String toString() {
+			return value;
 		}
 	}
 }
