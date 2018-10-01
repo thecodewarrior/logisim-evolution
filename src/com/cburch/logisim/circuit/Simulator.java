@@ -316,17 +316,9 @@ public class Simulator {
 
 	public void setTickFrequency(double freq) {
 		if (tickFrequency != freq) {
-			int millis = (int) Math.round(1000 / freq);
-			int ticks;
-			if (millis > 0) {
-				ticks = 1;
-			} else {
-				millis = 1;
-				ticks = (int) Math.round(freq / 1000);
-			}
-
+			long nanos = Math.round(1_000_000_000L / freq);
 			tickFrequency = freq;
-			ticker.setTickFrequency(millis, ticks);
+			ticker.setTickFrequency(nanos);
 			renewTickerAwake();
 			fireSimulatorStateChanged();
 		}

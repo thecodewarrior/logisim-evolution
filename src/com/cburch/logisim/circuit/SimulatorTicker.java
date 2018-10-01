@@ -31,105 +31,76 @@
 package com.cburch.logisim.circuit;
 import com.cburch.logisim.util.UniquelyNamedThread;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 class SimulatorTicker extends UniquelyNamedThread {
 	private Simulator.PropagationManager manager;
-	private int ticksPerTickPhase;
-	private int millisPerTickPhase;
+	private final AtomicLong tickInterval = new AtomicLong();
+	private final AtomicInteger forcedTicks = new AtomicInteger();
 
-	private boolean shouldTick;
-	private int ticksPending;
-	private boolean complete;
+	private final AtomicBoolean shouldTick = new AtomicBoolean();
+	private final AtomicBoolean complete = new AtomicBoolean();
 
 	public SimulatorTicker(Simulator.PropagationManager manager) {
 		super("SimulationTicker");
 		this.manager = manager;
-		ticksPerTickPhase = 1;
-		millisPerTickPhase = 1000;
-		shouldTick = false;
-		ticksPending = 0;
-		complete = false;
+		tickInterval.set(1000000000);
+		shouldTick.set(false);
+		complete.set(false);
 	}
 
 	@Override
 	public void run() {
-		long lastTick = System.currentTimeMillis();
-		while (true) {
-			boolean curShouldTick = shouldTick;
-			int millis = millisPerTickPhase;
-			int ticks = ticksPerTickPhase;
-			try {
-				synchronized (this) {
-					curShouldTick = shouldTick;
-					millis = millisPerTickPhase;
-					ticks = ticksPerTickPhase;
-					while (!curShouldTick && ticksPending == 0 && !complete) {
-						wait();
-						curShouldTick = shouldTick;
-						millis = millisPerTickPhase;
-						ticks = ticksPerTickPhase;
-					}
-				}
-			} catch (InterruptedException e) {
-			}
+		long lastTick = System.nanoTime();
+		boolean willTick = false;
+		while (!complete.get()) {
+			while(forcedTicks.getAndDecrement() > 0)
+				manager.requestTick();
+			while (forcedTicks.get() < 0)
+				forcedTicks.incrementAndGet();
 
-			if (complete)
-				break;
-
-			int toTick;
-			long now = System.currentTimeMillis();
-			if (curShouldTick && now - lastTick >= millis) {
-				toTick = ticks;
-			} else {
-				toTick = ticksPending;
-			}
-
-			if (toTick > 0) {
-				lastTick = now;
-				for (int i = 0; i < toTick; i++) {
-					manager.requestTick();
-				}
-				synchronized (this) {
-					if (ticksPending > toTick)
-						ticksPending -= toTick;
-					else
-						ticksPending = 0;
-				}
-				// we fire tickCompleted in this thread so that other
-				// objects (in particular the repaint process) can slow
-				// the thread down.
+			if(shouldTick.get() && willTick) {
+				manager.requestTick();
+				willTick = false;
 			}
 
 			try {
-				long nextTick = lastTick + millis;
-				int wait = (int) (nextTick - System.currentTimeMillis());
-				if (wait < 1)
-					wait = 1;
-				if (wait > 100)
-					wait = 100;
-				Thread.sleep(wait);
+				long wait = tickInterval.get() - (System.nanoTime() - lastTick);
+				if(wait < 0) {
+					lastTick = System.nanoTime();
+				} else if(wait > 50_000_000L) {
+				    Thread.sleep(50);
+				} else {
+                    lastTick = System.nanoTime();
+                    willTick = true;
+					Thread.sleep((long)Math.floor(wait / 1_000_000.0), (int)(wait % 1_000_000));
+                }
 			} catch (InterruptedException e) {
 			}
 		}
 	}
 
 	synchronized void setAwake(boolean value) {
-		shouldTick = value;
-		if (shouldTick)
+		shouldTick.set(value);
+		if (value)
 			notifyAll();
 	}
 
-	public synchronized void setTickFrequency(int millis, int ticks) {
-		millisPerTickPhase = millis;
-		ticksPerTickPhase = ticks;
+	public synchronized void setTickFrequency(long nanos) {
+	    tickInterval.set(nanos);
 	}
 
 	public synchronized void shutDown() {
-		complete = true;
+		complete.set(true);
 		notifyAll();
 	}
 
 	public synchronized void tickOnce() {
-		ticksPending++;
+		forcedTicks.incrementAndGet();
 		notifyAll();
 	}
 }
