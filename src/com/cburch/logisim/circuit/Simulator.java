@@ -30,6 +30,7 @@
 package com.cburch.logisim.circuit;
 
 import java.util.ArrayList;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,138 +40,14 @@ import com.cburch.logisim.util.UniquelyNamedThread;
 
 public class Simulator {
 
-	class PropagationManager extends UniquelyNamedThread {
-
-		private Propagator propagator = null;
-		private PropagationPoints stepPoints = new PropagationPoints();
-		private volatile int ticksRequested = 0;
-		private volatile int stepsRequested = 0;
-		private volatile boolean resetRequested = false;
-		private volatile boolean propagateRequested = false;
-		private volatile boolean complete = false;
-		// These variables apply only if PRINT_TICK_RATE is set
-		int tickRateTicks = 0;
-		long tickRateStart = System.currentTimeMillis();
-
-		private void doTick() {
-			synchronized (this) {
-				ticksRequested--;
-			}
-			propagator.tick();
-		}
-
-		public PropagationManager() {
-			super("PropagationManager");
-		}
-
-		public Propagator getPropagator() {
-			return propagator;
-		}
-
-		public synchronized void requestPropagate() {
-			if (!propagateRequested) {
-				propagateRequested = true;
-				notifyAll();
-			}
-		}
-
-		public synchronized void requestReset() {
-			if (!resetRequested) {
-				resetRequested = true;
-				notifyAll();
-			}
-		}
-
-		public synchronized void requestTick() {
-			if (ticksRequested < 16) {
-				ticksRequested++;
-			}
-			notifyAll();
-		}
-
-		@Override
-		public void run() {
-			while (!complete) {
-				try {
-				synchronized (this) {
-					while (!complete && !propagateRequested && !resetRequested
-							&& ticksRequested == 0 && stepsRequested == 0) {
-						try {
-							wait();
-						} catch (InterruptedException e) {
-						}
-					}
-				}
-
-				if (resetRequested) {
-					resetRequested = false;
-					if (propagator != null) {
-						propagator.reset();
-					}
-					firePropagationCompleted();
-					propagateRequested |= isRunning;
-				}
-
-				if (propagateRequested || ticksRequested > 0
-						|| stepsRequested > 0) {
-					boolean ticked = false;
-					propagateRequested = false;
-					if (isRunning) {
-						stepPoints.clear();
-						stepsRequested = 0;
-						if (propagator == null) {
-							ticksRequested = 0;
-						} else {
-							ticked = ticksRequested > 0;
-							if (ticked) {
-								doTick();
-							}
-							do {
-								propagateRequested = false;
-								try {
-									exceptionEncountered = false;
-									propagator.propagate();
-								} catch (UnsupportedOperationException thr) {
-									exceptionEncountered = true;
-									setIsRunning(false);
-								} catch (Exception thr) {
-									thr.printStackTrace();
-									exceptionEncountered = true;
-									setIsRunning(false);
-								}
-							} while (propagateRequested);
-							if (isOscillating()) {
-								setIsRunning(false);
-								ticksRequested = 0;
-								propagateRequested = false;
-							}
-						}
-					} else {
-						if (stepsRequested > 0) {
-							if (ticksRequested > 0) {
-								ticksRequested = 1;
-								doTick();
-							}
-
-							synchronized (this) {
-								stepsRequested--;
-							}
-							exceptionEncountered = false;
-							try {
-								stepPoints.clear();
-								propagator.step(stepPoints);
-							} catch (Exception thr) {
-								thr.printStackTrace();
-								exceptionEncountered = true;
-							}
-						}
-					}
-					if (ticked) {
-						fireTickCompleted();
-					}
-					firePropagationCompleted();
-				}
-					} catch (Throwable e) {
+	class PropagationManager {
+		private ThreadFactory factory = new ThreadFactory() {
+			@Override
+			public Thread newThread(Runnable r) {
+				Thread thread = new UniquelyNamedThread(() -> {
+					try {
+						r.run();
+					} catch (Exception e) {
 						e.printStackTrace();
 						exceptionEncountered = true;
 						setIsRunning(false);
@@ -180,6 +57,132 @@ public class Simulator {
 							}
 						});
 					}
+				}, "Propagation Manager");
+				try {
+					thread.setPriority(thread.getPriority()-1);
+				} catch (SecurityException e) {
+				} catch (IllegalArgumentException e) {
+				}
+				return thread;
+			}
+		};
+		private ExecutorService executor;
+
+		private Propagator propagator = null;
+		private PropagationPoints stepPoints = new PropagationPoints();
+		private volatile int ticksRequested = 0;
+		private volatile int stepsRequested = 0;
+		private volatile boolean propagateRequested = false;
+		private volatile boolean complete = false;
+
+		private ExecutorService executor() {
+			if(executor == null)
+				executor = Executors.newSingleThreadExecutor(factory);
+			return executor;
+        }
+
+		private void doTick() {
+			synchronized (this) {
+				ticksRequested--;
+			}
+			propagator.tick();
+		}
+
+		public Propagator getPropagator() {
+			return propagator;
+		}
+
+		public synchronized void requestPropagate() {
+			if (!propagateRequested) {
+				propagateRequested = true;
+				executor().execute(this::propagateOrTickOrStep);
+			}
+		}
+
+		public synchronized void requestReset() {
+			if(executor != null) {
+			    shutDown();
+				executor().execute(this::reset);
+				if(isRunning) {
+					propagateRequested |= isRunning;
+					executor().execute(this::propagateOrTickOrStep);
+				}
+			}
+		}
+
+		public synchronized void requestTick() {
+			if (ticksRequested < 16) {
+				ticksRequested++;
+			}
+			executor().execute(this::propagateOrTickOrStep);
+		}
+
+		private void reset() {
+			if (propagator != null) {
+				propagator.reset();
+			}
+			firePropagationCompleted();
+		}
+
+		private void propagateOrTickOrStep() {
+			if (propagateRequested || ticksRequested > 0
+					|| stepsRequested > 0) {
+				boolean ticked = false;
+				propagateRequested = false;
+				if (isRunning) {
+					stepPoints.clear();
+					stepsRequested = 0;
+					if (propagator == null) {
+						ticksRequested = 0;
+					} else {
+						ticked = ticksRequested > 0;
+						if (ticked) {
+							doTick();
+						}
+						do {
+							propagateRequested = false;
+							try {
+								exceptionEncountered = false;
+								propagator.propagate();
+							} catch (UnsupportedOperationException thr) {
+								exceptionEncountered = true;
+								setIsRunning(false);
+							} catch (Exception thr) {
+								thr.printStackTrace();
+								exceptionEncountered = true;
+								setIsRunning(false);
+							}
+						} while (propagateRequested);
+						if (isOscillating()) {
+							setIsRunning(false);
+							ticksRequested = 0;
+							propagateRequested = false;
+						}
+					}
+				} else {
+					if (stepsRequested > 0) {
+						if (ticksRequested > 0) {
+							ticksRequested = 1;
+							doTick();
+						}
+
+						synchronized (this) {
+							stepsRequested--;
+						}
+						exceptionEncountered = false;
+						try {
+							stepPoints.clear();
+							propagator.step(stepPoints);
+						} catch (Exception thr) {
+							thr.printStackTrace();
+							exceptionEncountered = true;
+						}
+					}
+				}
+				if (ticked) {
+					fireTickCompleted();
+				}
+				firePropagationCompleted();
 			}
 		}
 
@@ -188,8 +191,18 @@ public class Simulator {
 		}
 
 		public synchronized void shutDown() {
-			complete = true;
-			notifyAll();
+			executor.shutdownNow();
+			try {
+				executor.awaitTermination(10, TimeUnit.SECONDS);
+				if(!executor.isTerminated()) {
+					executor = null;
+					throw new RuntimeException("Failed to shutdown ticker within ten seconds");
+				}
+				executor = null;
+			} catch(InterruptedException e) {
+				executor = null;
+				throw new RuntimeException("Interrupt while awaiting termination of ticker", e);
+			}
 		}
 	}
 
@@ -204,15 +217,6 @@ public class Simulator {
 	public Simulator() {
 		manager = new PropagationManager();
 		ticker = new SimulatorTicker(manager);
-
-		try {
-			manager.setPriority(manager.getPriority() - 1);
-		} catch (SecurityException e) {
-		} catch (IllegalArgumentException e) {
-		}
-
-		ticker.priority = manager.getPriority();
-		manager.start();
 
 		tickFrequency = 0.0;
 		setTickFrequency(AppPreferences.TICK_FREQUENCY.get().doubleValue());

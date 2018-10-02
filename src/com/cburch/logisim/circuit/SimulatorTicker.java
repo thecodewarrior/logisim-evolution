@@ -39,14 +39,12 @@ import java.util.concurrent.atomic.AtomicLong;
 class SimulatorTicker {
 	private Simulator.PropagationManager manager;
     private ScheduledExecutorService executor;
-    int priority = -1;
     private ThreadFactory factory = new ThreadFactory() {
 		@Override
 		public Thread newThread(Runnable r) {
 			Thread thread = new UniquelyNamedThread(r, "Simulator Ticker");
 			try {
-			    if(priority != -1)
-					thread.setPriority(priority);
+				thread.setPriority(thread.getPriority()-1);
 			} catch (SecurityException e) {
 			} catch (IllegalArgumentException e) {
 			}
