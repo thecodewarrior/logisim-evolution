@@ -121,8 +121,8 @@ public class MiniBitSelector extends InstanceFactory {
         BitWidth wout = state.getAttributeValue(ATTR_OUT_WIDTH);
         if(in.isFullyDefined()) {
             long value = in.toLongValue();
-            value = value >> state.getAttributeValue(ATTR_FIRST_BIT);
-            value = value & (1L << wout.getWidth() - 1);
+            value = value >>> state.getAttributeValue(ATTR_FIRST_BIT);
+            value = value & ((1L << wout.getWidth()) - 1);
             state.setPort(0, Value.createKnown(wout, (int)value), 1);
         } else if(in.isUnknown()) {
             state.setPort(0, Value.createUnknown(wout), 1);
