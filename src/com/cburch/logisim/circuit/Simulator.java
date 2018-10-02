@@ -207,13 +207,12 @@ public class Simulator {
 
 		try {
 			manager.setPriority(manager.getPriority() - 1);
-			ticker.setPriority(ticker.getPriority() - 1);
 		} catch (SecurityException e) {
 		} catch (IllegalArgumentException e) {
 		}
 
+		ticker.priority = manager.getPriority();
 		manager.start();
-		ticker.start();
 
 		tickFrequency = 0.0;
 		setTickFrequency(AppPreferences.TICK_FREQUENCY.get().doubleValue());

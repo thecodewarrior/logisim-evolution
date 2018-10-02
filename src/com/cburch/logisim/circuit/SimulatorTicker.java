@@ -31,76 +31,100 @@
 package com.cburch.logisim.circuit;
 import com.cburch.logisim.util.UniquelyNamedThread;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-class SimulatorTicker extends UniquelyNamedThread {
+class SimulatorTicker {
 	private Simulator.PropagationManager manager;
-	private final AtomicLong tickInterval = new AtomicLong();
-	private final AtomicInteger forcedTicks = new AtomicInteger();
-
-	private final AtomicBoolean shouldTick = new AtomicBoolean();
-	private final AtomicBoolean complete = new AtomicBoolean();
+    private ScheduledExecutorService executor;
+    int priority = -1;
+    private ThreadFactory factory = new ThreadFactory() {
+		@Override
+		public Thread newThread(Runnable r) {
+			Thread thread = new UniquelyNamedThread(r, "Simulator Ticker");
+			try {
+			    if(priority != -1)
+					thread.setPriority(priority);
+			} catch (SecurityException e) {
+			} catch (IllegalArgumentException e) {
+			}
+			return thread;
+		}
+	};
+	private long tickInterval = TimeUnit.NANOSECONDS.toSeconds(1);
+	private boolean isTicking = false;
 
 	public SimulatorTicker(Simulator.PropagationManager manager) {
-		super("SimulationTicker");
 		this.manager = manager;
-		tickInterval.set(1000000000);
-		shouldTick.set(false);
-		complete.set(false);
 	}
 
-	@Override
-	public void run() {
-		long lastTick = System.nanoTime();
-		boolean willTick = false;
-		while (!complete.get()) {
-			while(forcedTicks.getAndDecrement() > 0)
-				manager.requestTick();
-			while (forcedTicks.get() < 0)
-				forcedTicks.incrementAndGet();
+	private ScheduledExecutorService executor() {
+		if(executor == null)
+			executor = Executors.newSingleThreadScheduledExecutor(factory);
+		return executor;
+	}
 
-			if(shouldTick.get() && willTick) {
-				manager.requestTick();
-				willTick = false;
+	private void forceTick() {
+		executor().schedule(runTick, 1, TimeUnit.MILLISECONDS);
+	}
+
+	private void startTicking() {
+		isTicking = true;
+		executor().scheduleAtFixedRate(runTick, 0, tickInterval, TimeUnit.NANOSECONDS);
+	}
+
+	private void stopTicking() {
+		if(!isTicking || executor == null) return;
+		isTicking = false;
+		executor.shutdownNow();
+		try {
+			executor.awaitTermination(10, TimeUnit.SECONDS);
+			if(!executor.isTerminated()) {
+				executor = null;
+				throw new RuntimeException("Failed to shutdown ticker within ten seconds");
 			}
+			executor = null;
+		} catch(InterruptedException e) {
+			executor = null;
+			throw new RuntimeException("Interrupt while awaiting termination of ticker", e);
+		}
+	}
 
-			try {
-				long wait = tickInterval.get() - (System.nanoTime() - lastTick);
-				if(wait < 0) {
-					lastTick = System.nanoTime();
-				} else if(wait > 50_000_000L) {
-				    Thread.sleep(50);
-				} else {
-                    lastTick = System.nanoTime();
-                    willTick = true;
-					Thread.sleep((long)Math.floor(wait / 1_000_000.0), (int)(wait % 1_000_000));
-                }
-			} catch (InterruptedException e) {
+	private void restartTicking() {
+		if(isTicking) {
+			stopTicking();
+			startTicking();
+		}
+	}
+
+	Runnable runTick = new Runnable() {
+		public void run() {
+			manager.requestTick();
+		}
+	};
+
+	synchronized void setAwake(boolean value) {
+		if(isTicking != value) {
+			if(value) {
+				startTicking();
+			} else {
+				stopTicking();
 			}
 		}
 	}
 
-	synchronized void setAwake(boolean value) {
-		shouldTick.set(value);
-		if (value)
-			notifyAll();
-	}
-
 	public synchronized void setTickFrequency(long nanos) {
-	    tickInterval.set(nanos);
+		tickInterval = nanos;
+		restartTicking();
 	}
 
 	public synchronized void shutDown() {
-		complete.set(true);
-		notifyAll();
+		stopTicking();
 	}
 
 	public synchronized void tickOnce() {
-		forcedTicks.incrementAndGet();
-		notifyAll();
+		forceTick();
 	}
 }

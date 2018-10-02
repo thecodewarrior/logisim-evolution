@@ -58,7 +58,7 @@ class TickCounter implements SimulatorListener {
 		if (sampleCount == 0 || sampleTime == 0) {
 			return "";
 		} else {
-			double average = sampleCount / (sampleTime / 1_000_0000_000.0);
+			double average = sampleCount / (sampleTime / 1_000_000_000.0);
 			if (average >= 1000.0) {
 				return Strings.get("tickRateKHz", String.format("%.3f", average/1000.0));
 			} else {
