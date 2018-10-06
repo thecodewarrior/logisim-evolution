@@ -31,6 +31,7 @@ package com.cburch.logisim.circuit;
 
 import java.util.ArrayList;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -70,10 +71,11 @@ public class Simulator {
 
 		private Propagator propagator = null;
 		private PropagationPoints stepPoints = new PropagationPoints();
-		private volatile int ticksRequested = 0;
+		private final AtomicInteger ticksRequested = new AtomicInteger();
 		private volatile int stepsRequested = 0;
 		private volatile boolean propagateRequested = false;
-		private volatile boolean complete = false;
+
+		private final AtomicInteger queuedJobs = new AtomicInteger();
 
 		private ExecutorService executor() {
 			if(executor == null)
@@ -82,9 +84,7 @@ public class Simulator {
         }
 
 		private void doTick() {
-			synchronized (this) {
-				ticksRequested--;
-			}
+			ticksRequested.getAndDecrement();
 			propagator.tick();
 		}
 
@@ -92,32 +92,39 @@ public class Simulator {
 			return propagator;
 		}
 
-		public synchronized void requestPropagate() {
+		public void requestPropagate() {
 			if (!propagateRequested) {
 				propagateRequested = true;
+				queuedJobs.getAndIncrement();
 				executor().execute(this::propagateOrTickOrStep);
 			}
 		}
 
-		public synchronized void requestReset() {
+		public void requestReset() {
 			if(executor != null) {
 			    shutDown();
+				queuedJobs.set(1);
 				executor().execute(this::reset);
 				if(isRunning) {
-					propagateRequested |= isRunning;
-					executor().execute(this::propagateOrTickOrStep);
+				    if(!propagateRequested) {
+						propagateRequested = true;
+						queuedJobs.getAndIncrement();
+						executor().execute(this::propagateOrTickOrStep);
+					}
 				}
 			}
 		}
 
-		public synchronized void requestTick() {
-			if (ticksRequested < 16) {
-				ticksRequested++;
+		public void requestTick() {
+			if (ticksRequested.get() < 16) {
+				ticksRequested.getAndIncrement();
+				queuedJobs.getAndIncrement();
+				executor().execute(this::propagateOrTickOrStep);
 			}
-			executor().execute(this::propagateOrTickOrStep);
 		}
 
 		private void reset() {
+			queuedJobs.getAndDecrement();
 			if (propagator != null) {
 				propagator.reset();
 			}
@@ -125,7 +132,8 @@ public class Simulator {
 		}
 
 		private void propagateOrTickOrStep() {
-			if (propagateRequested || ticksRequested > 0
+			queuedJobs.getAndDecrement();
+			if (propagateRequested || ticksRequested.get() > 0
 					|| stepsRequested > 0) {
 				boolean ticked = false;
 				propagateRequested = false;
@@ -133,9 +141,9 @@ public class Simulator {
 					stepPoints.clear();
 					stepsRequested = 0;
 					if (propagator == null) {
-						ticksRequested = 0;
+						ticksRequested.set(0);
 					} else {
-						ticked = ticksRequested > 0;
+						ticked = ticksRequested.get() > 0;
 						if (ticked) {
 							doTick();
 						}
@@ -155,14 +163,12 @@ public class Simulator {
 						} while (propagateRequested);
 						if (isOscillating()) {
 							setIsRunning(false);
-							ticksRequested = 0;
 							propagateRequested = false;
 						}
 					}
 				} else {
 					if (stepsRequested > 0) {
-						if (ticksRequested > 0) {
-							ticksRequested = 1;
+						if (ticksRequested.get() > 0) {
 							doTick();
 						}
 
