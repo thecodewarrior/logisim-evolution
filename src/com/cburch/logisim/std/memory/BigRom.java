@@ -201,7 +201,7 @@ public class BigRom extends InstanceFactory {
 			long[] words = new long[(int)Math.ceil(bytes.length/4.0)];
 			for(int b = start; b < bytes.length; b++) {
 				int word = (int)Math.floor(b/4.0);
-				int shift = (3 - (b-start) % 4) * 8;
+				int shift = ((b-start) % 4) * 8;
 				words[word] |= (bytes[b] & 0xFF) << shift;
 			}
 			return words;
