@@ -76,7 +76,7 @@ public class BigRom extends InstanceFactory {
 			.forInteger("valueWidth", Strings.getter("bigRomValueWidth"));
 
 	public BigRom() {
-		super("BigRom", Strings.getter("bigRomComponent"));
+		super("Big ROM", Strings.getter("bigRomComponent"));
 		setAttributes(
 				new Attribute[] {
 						StdAttr.LABEL, StdAttr.LABEL_FONT,
