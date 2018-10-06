@@ -299,7 +299,7 @@ public class MenuSimulate extends Menu {
 		return result;
 	}
 
-	public static final Double[] SupportedTickFrequencies = { 4096.0, 2048.0,
+	public static final Double[] SupportedTickFrequencies = { 1048576.0, 32768.0, 16384.0, 8192.0, 4096.0, 2048.0,
 			1024.0, 512.0, 256.0, 128.0, 64.0, 32.0, 16.0, 8.0, 4.0, 2.0, 1.0,
 			0.5, 0.25 };
 	private LogisimMenuBar menubar;
