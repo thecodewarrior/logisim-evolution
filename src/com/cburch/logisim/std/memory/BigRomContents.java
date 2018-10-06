@@ -164,13 +164,13 @@ class BigRomContents {
 				offset = BigInteger.ZERO;
 				line = line.substring(index+1);
 			}
-			String[] elements = line.split(" ");
+			String[] elements = line.trim().split(" ");
 			for (String element : elements) {
 				BigInteger repeat = BigInteger.ONE;
 				index = element.indexOf("*");
 				if(index != -1) {
-					repeat = new BigInteger(element.substring(0, index).trim(), 10);
-					element = element.substring(index+1);
+					repeat = new BigInteger(element.substring(index+1).trim(), 10);
+					element = element.substring(0, index);
 				}
 				BigInteger value = new BigInteger(element.trim(), 16);
 				if(!value.equals(BigInteger.ZERO)) {
