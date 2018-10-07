@@ -48,6 +48,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -439,6 +440,8 @@ public class Canvas extends JPanel implements LocaleListener,
 			}
 		}
 
+		long lastPaint = 0;
+
 		@Override
 		public void propagationCompleted(SimulatorEvent e) {
 			/*
@@ -451,7 +454,10 @@ public class Canvas extends JPanel implements LocaleListener,
 			 * Math.random()); // repaintDuration is for jittering the repaints
 			 * to // reduce aliasing effects repaint(); }
 			 */
-			paintThread.requestRepaint();
+			if(System.currentTimeMillis() > lastPaint + 50) {
+				lastPaint = System.currentTimeMillis();
+				paintThread.requestRepaint();
+			}
 		}
 
 		@Override
