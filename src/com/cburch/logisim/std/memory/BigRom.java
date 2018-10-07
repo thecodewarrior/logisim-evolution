@@ -149,7 +149,7 @@ public class BigRom extends InstanceFactory {
 
 		if(isFullyDefined) {
 			contents.address = ports.getInput(values);
-			values = ports.getOutput(contents.getCurrent());
+			values = ports.getOutput(contents.getCurrent(), ports.valueWidth);
 			for (int i = 0; i < ports.valuePortWidths.length; i++) {
 				int value = 0;
 				if(i < values.length) value = (int) (values[i] >> (32-ports.valuePortWidths[i]));
@@ -195,14 +195,16 @@ public class BigRom extends InstanceFactory {
 			return new BigInteger(1, numberAsArray);
 		}
 
-		public long[] getOutput(BigInteger value) {
-	    	int start = value.bitLength() % 8 == 0 ? 1 : 0; // if the end falls on a
+		public long[] getOutput(BigInteger value, int wordCount) {
 			byte[] bytes = value.toByteArray();
-			long[] words = new long[(int)Math.ceil(bytes.length/4.0)];
-			for(int b = start; b < bytes.length; b++) {
-				int word = (int)Math.floor(b/4.0);
-				int shift = ((b-start) % 4) * 8;
-				words[word] |= (bytes[b] & 0xFF) << shift;
+			long[] words = new long[wordCount];
+			for (int w = 0; w < wordCount; w++) {
+				for (int b = 0; b < 8; b++) {
+					int i = bytes.length-1 - (w*8) - b;
+					if(i >= 0) {
+						words[w] |= (bytes[i] & 0xFF) << (b*8);
+					}
+				}
 			}
 			return words;
 		}
