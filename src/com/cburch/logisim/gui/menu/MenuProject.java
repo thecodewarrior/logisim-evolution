@@ -32,10 +32,9 @@ package com.cburch.logisim.gui.menu;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 
-import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
+import javax.swing.*;
 
 import com.cburch.logisim.Main;
 import com.cburch.logisim.proj.Project;
@@ -157,6 +156,9 @@ class MenuProject extends Menu {
 		unload.setEnabled(known);
 		options.setEnabled(known);
 		computeEnabled();
+
+		int menuMask = getToolkit().getMenuShortcutKeyMask();
+		reSource.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, menuMask | KeyEvent.SHIFT_DOWN_MASK));
 	}
 
     @Override
