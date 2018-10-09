@@ -35,6 +35,7 @@ import java.awt.Graphics;
 import java.awt.Window;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -42,10 +43,11 @@ import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import java.util.WeakHashMap;
 
-import javax.swing.JLabel;
+import javax.swing.*;
 
 import com.bfh.logisim.designrulecheck.CorrectLabel;
 import com.cburch.logisim.circuit.CircuitState;
+import com.cburch.logisim.comp.SourcedComponentFactory;
 import com.cburch.logisim.data.Attribute;
 import com.cburch.logisim.data.AttributeSet;
 import com.cburch.logisim.data.BitWidth;
@@ -62,7 +64,7 @@ import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.util.GraphicsUtil;
 
-public class Rom extends Mem {
+public class Rom extends Mem implements SourcedComponentFactory {
 	static class ContentsAttribute extends Attribute<MemContents> {
 		public ContentsAttribute() {
 			super("contents", Strings.getter("romContentsAttr"));
@@ -393,6 +395,11 @@ public class Rom extends Mem {
 
 		int val = myState.getContents().get(addr);
 		state.setPort(DATA, Value.createKnown(dataBits, val), DELAY);
+	}
+
+	@Override
+	public void reloadFromSource(File file, AttributeSet attributeSet) throws IOException {
+		HexFile.open(attributeSet.getValue(CONTENTS_ATTR), file);
 	}
 
 	@Override

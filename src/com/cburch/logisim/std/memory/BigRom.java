@@ -30,6 +30,7 @@
 
 package com.cburch.logisim.std.memory;
 
+import com.cburch.logisim.comp.SourcedComponentFactory;
 import com.cburch.logisim.data.*;
 import com.cburch.logisim.instance.*;
 import com.cburch.logisim.tools.key.BitWidthConfigurator;
@@ -38,12 +39,14 @@ import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.StringGetter;
 import com.cburch.logisim.util.StringUtil;
 
+import java.io.File;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class BigRom extends InstanceFactory {
+public class BigRom extends InstanceFactory implements SourcedComponentFactory {
 	public static void draw(InstancePainter painter, int x, int y) {
 		BigRomPorts ports = new BigRomPorts(painter.getAttributeValue(ATTR_ADDRESS_WIDTH), painter.getAttributeValue(ATTR_VALUE_WIDTH));
 		BigRomContents contents = painter.getAttributeValue(BigRomContents.ATTR_CONTENTS);
@@ -80,11 +83,11 @@ public class BigRom extends InstanceFactory {
 		setAttributes(
 				new Attribute[] {
 						StdAttr.LABEL, StdAttr.LABEL_FONT,
-						ATTR_ADDRESS_WIDTH, ATTR_VALUE_WIDTH, BigRomContents.ATTR_CONTENTS
+						ATTR_ADDRESS_WIDTH, ATTR_VALUE_WIDTH, BigRomContents.ATTR_CONTENTS, StdAttr.SOURCE_PATH
 				},
 				new Object[] {
 						"", StdAttr.DEFAULT_LABEL_FONT,
-                        32, 32, null
+                        32, 32, null, ""
 				}
 		);
 		setIconName("bigRom.gif");
@@ -251,5 +254,10 @@ public class BigRom extends InstanceFactory {
 		public String toString() {
 			return value;
 		}
+	}
+
+	@Override
+	public void reloadFromSource(File file, AttributeSet attributeSet) throws IOException {
+	    attributeSet.getValue(BigRomContents.ATTR_CONTENTS).open(file);
 	}
 }

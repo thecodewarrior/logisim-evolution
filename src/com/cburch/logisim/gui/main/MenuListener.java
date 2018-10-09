@@ -165,6 +165,8 @@ class MenuListener {
 				ProjectCircuitActions.doAddCircuit(proj);
 			} else if (src == LogisimMenuBar.MOVE_CIRCUIT_UP) {
 				ProjectCircuitActions.doMoveCircuit(proj, cur, -1);
+			} else if (src == LogisimMenuBar.RE_SOURCE_COMPONENTS) {
+				ProjectCircuitActions.reSourceComponents(proj, cur);
 			} else if (src == LogisimMenuBar.MOVE_CIRCUIT_DOWN) {
 				ProjectCircuitActions.doMoveCircuit(proj, cur, 1);
 			} else if (src == LogisimMenuBar.SET_MAIN_CIRCUIT) {
@@ -294,6 +296,7 @@ class MenuListener {
 			}
 
 			menubar.addActionListener(LogisimMenuBar.ADD_CIRCUIT, this);
+			menubar.addActionListener(LogisimMenuBar.RE_SOURCE_COMPONENTS, this);
 			menubar.addActionListener(LogisimMenuBar.MOVE_CIRCUIT_UP, this);
 			menubar.addActionListener(LogisimMenuBar.MOVE_CIRCUIT_DOWN, this);
 			menubar.addActionListener(LogisimMenuBar.SET_MAIN_CIRCUIT, this);

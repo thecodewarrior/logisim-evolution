@@ -36,6 +36,7 @@ import java.util.WeakHashMap;
 
 import com.cburch.logisim.data.AbstractAttributeSet;
 import com.cburch.logisim.data.Attribute;
+import com.cburch.logisim.data.Attributes;
 import com.cburch.logisim.data.BitWidth;
 import com.cburch.logisim.gui.hex.HexFrame;
 import com.cburch.logisim.instance.StdAttr;
@@ -65,7 +66,8 @@ class RomAttributes extends AbstractAttributeSet {
 
 	private static List<Attribute<?>> ATTRIBUTES = Arrays
 			.asList(new Attribute<?>[] { Mem.ADDR_ATTR, Mem.DATA_ATTR,
-					Rom.CONTENTS_ATTR, StdAttr.LABEL, StdAttr.LABEL_FONT, StdAttr.LABEL_VISIBILITY });
+					Rom.CONTENTS_ATTR, StdAttr.LABEL, StdAttr.LABEL_FONT, StdAttr.LABEL_VISIBILITY,
+					StdAttr.SOURCE_PATH });
 
 	private static WeakHashMap<MemContents, RomContentsListener> listenerRegistry = new WeakHashMap<MemContents, RomContentsListener>();
 
@@ -76,6 +78,7 @@ class RomAttributes extends AbstractAttributeSet {
 	private String Label = "";
 	private Font LabelFont = StdAttr.DEFAULT_LABEL_FONT;
 	private Boolean LabelVisable = false;
+	private String Source = "";
 
 	RomAttributes() {
 		contents = MemContents.create(addrBits.getWidth(), dataBits.getWidth(),true);
@@ -114,6 +117,9 @@ class RomAttributes extends AbstractAttributeSet {
 		}
 		if (attr == StdAttr.LABEL_VISIBILITY) {
 			return (V) LabelVisable;
+		}
+		if (attr == StdAttr.SOURCE_PATH) {
+			return (V) Source;
 		}
 		return null;
 	}
@@ -164,6 +170,14 @@ class RomAttributes extends AbstractAttributeSet {
 				return;
 			LabelVisable = newVis;
 			fireAttributeValueChanged(attr, value,null);
+		} else if (attr == StdAttr.SOURCE_PATH) {
+			String NewSource = (String) value;
+			if (Source.equals(NewSource))
+				return;
+			@SuppressWarnings("unchecked")
+			V OldSource = (V) Source;
+			Source = NewSource;
+			fireAttributeValueChanged(attr, value, OldSource);
 		}
 	}
 }

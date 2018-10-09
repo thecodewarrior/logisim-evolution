@@ -72,6 +72,8 @@ class MenuProject extends Menu {
 	private JMenuItem loadLogisim = new JMenuItem();
 	private JMenuItem loadJar = new JMenuItem();
 	private JMenuItem unload = new JMenuItem();
+	private MenuItemImpl reSource = new MenuItemImpl(this,
+			LogisimMenuBar.RE_SOURCE_COMPONENTS);
 	private MenuItemImpl moveUp = new MenuItemImpl(this,
 			LogisimMenuBar.MOVE_CIRCUIT_UP);
 	private MenuItemImpl moveDown = new MenuItemImpl(this,
@@ -104,6 +106,7 @@ class MenuProject extends Menu {
 		loadLogisim.addActionListener(myListener);
 		loadJar.addActionListener(myListener);
 		unload.addActionListener(myListener);
+		menubar.registerItem(LogisimMenuBar.RE_SOURCE_COMPONENTS, reSource);
 		menubar.registerItem(LogisimMenuBar.MOVE_CIRCUIT_UP, moveUp);
 		menubar.registerItem(LogisimMenuBar.MOVE_CIRCUIT_DOWN, moveDown);
 		menubar.registerItem(LogisimMenuBar.SET_MAIN_CIRCUIT, setAsMain);
@@ -127,6 +130,7 @@ class MenuProject extends Menu {
 		add(loadLibrary);
 		add(unload);
 		addSeparator();
+		add(reSource);
 		add(moveUp);
 		add(moveDown);
 		add(setAsMain);
@@ -157,7 +161,7 @@ class MenuProject extends Menu {
 
     @Override
 	void computeEnabled() {
-		setEnabled(menubar.getProject() != null || addCircuit.hasListeners()
+		setEnabled(menubar.getProject() != null || addCircuit.hasListeners() || reSource.hasListeners()
 				|| moveUp.hasListeners() || moveDown.hasListeners()
 				|| setAsMain.hasListeners() || remove.hasListeners()
 				|| layout.hasListeners() || revertAppearance.hasListeners()
@@ -175,6 +179,7 @@ class MenuProject extends Menu {
 		loadLogisim.setText(Strings.get("projectLoadLogisimItem"));
 		loadJar.setText(Strings.get("projectLoadJarItem"));
 		unload.setText(Strings.get("projectUnloadLibrariesItem"));
+		reSource.setText(Strings.get("projectReSourceItem"));
 		moveUp.setText(Strings.get("projectMoveCircuitUpItem"));
 		moveDown.setText(Strings.get("projectMoveCircuitDownItem"));
 		setAsMain.setText(Strings.get("projectSetAsMainItem"));

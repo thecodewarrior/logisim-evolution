@@ -35,6 +35,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -52,6 +54,9 @@ import com.cburch.logisim.analyze.model.AnalyzerModel;
 import com.cburch.logisim.circuit.Analyze;
 import com.cburch.logisim.circuit.AnalyzeException;
 import com.cburch.logisim.circuit.Circuit;
+import com.cburch.logisim.comp.Component;
+import com.cburch.logisim.comp.ComponentFactory;
+import com.cburch.logisim.comp.SourcedComponentFactory;
 import com.cburch.logisim.file.LogisimFileActions;
 import com.cburch.logisim.instance.Instance;
 import com.cburch.logisim.instance.StdAttr;
@@ -197,6 +202,35 @@ public class ProjectCircuitActions {
 				outputNames);
 		analyzer.setVisible(true);
 		analyzer.toFront();
+	}
+
+	public static void reSourceComponents(Project proj, Circuit circuit) {
+		File base = proj.getLogisimFile().getLoader().getMainFile();
+		if(base == null) {
+			JOptionPane.showMessageDialog(proj.getFrame(), Strings.get("reSourceHasNoMainFileBody"),
+					Strings.get("reSourceErrorTitle"),
+					JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		base = base.getParentFile();
+		for(Component component : circuit.getNonWires()) {
+			try {
+				reSourceComponent(base, component);
+			} catch (IOException e) {
+				JOptionPane.showMessageDialog(proj.getFrame(), e.getMessage(),
+						Strings.get("reSourceLoadErrorTitle"),
+						JOptionPane.ERROR_MESSAGE);
+			}
+		}
+	}
+	private static void reSourceComponent(File base, Component component) throws IOException {
+		String sourcePath = component.getAttributeSet().getValue(StdAttr.SOURCE_PATH);
+		if(sourcePath == null || sourcePath.equals("")) return;
+		if(!(component.getFactory() instanceof SourcedComponentFactory)) return;
+
+		SourcedComponentFactory factory = (SourcedComponentFactory)component.getFactory();
+		File file = new File(base.getAbsolutePath() + "/" + sourcePath);
+		factory.reloadFromSource(file, component.getAttributeSet());
 	}
 
 	public static void doMoveCircuit(Project proj, Circuit cur, int delta) {

@@ -74,7 +74,10 @@ public interface StdAttr {
 			"labelcolor", Strings.getter("ioLabelColorAttr"));
 	public static final Color DEFAULT_LABEL_COLOR = Color.BLUE;
 	public static final Attribute<Boolean> LABEL_VISIBILITY = Attributes.forBoolean(
-			"labelvisible", Strings.getter("stdLabelVisibility")); 
-	
+			"labelvisible", Strings.getter("stdLabelVisibility"));
+
+	public static final Attribute<String> SOURCE_PATH = Attributes.forString(
+			"sourcepath", Strings.getter("stdSourcePathAttr"));
+
 	public static final Attribute<String> DUMMY = Attributes.forHidden();
 }
