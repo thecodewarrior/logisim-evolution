@@ -90,6 +90,7 @@ class BigRomContents {
 		@Override
 		public BigRomContents parse(String value) {
 		    BigRomContents contents = new BigRomContents();
+		    if(value.equals("")) return contents;
 		    String[] entries = value.split("\\|");
 			for (String entry : entries) {
 				String[] keyValue = entry.split(":");

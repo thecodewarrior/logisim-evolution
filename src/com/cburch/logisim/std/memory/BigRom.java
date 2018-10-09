@@ -99,7 +99,8 @@ public class BigRom extends InstanceFactory {
 
 	@Override
 	protected void configureNewInstance(Instance instance) {
-		instance.getAttributeSet().setValue(BigRomContents.ATTR_CONTENTS, new BigRomContents());
+		if(instance.getAttributeValue(BigRomContents.ATTR_CONTENTS) == null)
+			instance.getAttributeSet().setValue(BigRomContents.ATTR_CONTENTS, new BigRomContents());
 		Bounds bds = instance.getBounds();
 		instance.setTextField(StdAttr.LABEL, StdAttr.LABEL_FONT, bds.getX()
 				+ bds.getWidth() / 2, bds.getY() - 3, GraphicsUtil.H_CENTER,
