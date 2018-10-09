@@ -178,6 +178,7 @@ public class HexFile {
 
 	public static void open(HexModel dst, Reader in) throws IOException {
 		HexReader reader = new HexReader(new BufferedReader(in));
+		dst.fill(dst.getFirstOffset(), dst.getLastOffset() - dst.getFirstOffset() + 1, 0);
 		long offs = dst.getFirstOffset();
 		while (reader.hasNext()) {
 			int[] values = reader.next();
@@ -187,7 +188,6 @@ public class HexFile {
 			dst.set(offs, values);
 			offs += values.length;
 		}
-		dst.fill(offs, dst.getLastOffset() - offs + 1, 0);
 	}
 
 	public static int[] parse(Reader in) throws IOException {
