@@ -153,7 +153,7 @@ public class BigRom extends InstanceFactory implements SourcedComponentFactory {
 
 		if(isFullyDefined) {
 			contents.address = ports.getInput(values);
-			values = ports.getOutput(contents.getCurrent(), ports.valueWidth);
+			values = ports.getOutput(contents.getCurrent(), ports.valuePortWidths.length);
 			for (int i = 0; i < ports.valuePortWidths.length; i++) {
 				int value = 0;
 				if(i < values.length) value = (int) (values[i] >> (32-ports.valuePortWidths[i]));
@@ -204,7 +204,7 @@ public class BigRom extends InstanceFactory implements SourcedComponentFactory {
 			long[] words = new long[wordCount];
 			for (int w = 0; w < wordCount; w++) {
 				for (int b = 0; b < 8; b++) {
-					int i = bytes.length-1 - (w*8) - b;
+					int i = bytes.length-1 - (w*4) - b;
 					if(i >= 0) {
 						words[w] |= (bytes[i] & 0xFF) << (b*8);
 					}
