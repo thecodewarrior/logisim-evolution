@@ -47,6 +47,7 @@ class MemState implements InstanceData, Cloneable, HexModelListener {
 	private long curScroll = 0;
 	private long cursorLoc = -1;
 	private long curAddr = -1;
+	private long usedAddr = -1;
 	private boolean RecalculateParameters = true;
 	private int NrOfLines = 1;
 	private int NrDataSymbolsEachLine = 1;
@@ -169,6 +170,10 @@ class MemState implements InstanceData, Cloneable, HexModelListener {
 
 	long getCurrent() {
 		return curAddr;
+	}
+
+	long getUsed() {
+		return usedAddr;
 	}
 
 	//
@@ -306,6 +311,10 @@ class MemState implements InstanceData, Cloneable, HexModelListener {
 
 	void setCurrent(long value) {
 		curAddr = isValidAddr(value) ? value : -1L;
+	}
+
+	void setUsedAddr(long value) {
+		usedAddr = isValidAddr(value) ? value : -1L;
 	}
 
 	void setCursor(long value) {

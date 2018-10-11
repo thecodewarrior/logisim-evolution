@@ -771,36 +771,42 @@ public class Ram extends Mem {
 		boolean outputEnabled = (!asynch || trigger.equals(StdAttr.TRIG_HIGH)) ? state
 				.getPortValue(OE) != Value.FALSE
 				: state.getPortValue(OE) == Value.FALSE;
+		boolean shouldStore = (!asynch || trigger.equals(StdAttr.TRIG_HIGH)) ? state
+				.getPortValue(WE) != Value.FALSE
+				: state.getPortValue(WE) == Value.FALSE;
 		BitWidth dataBits = state.getAttributeValue(DATA_ATTR);
+		Object be = state.getAttributeValue(RamAttributes.ATTR_ByteEnables);
+		boolean byteEnables = be == null ? false : be
+				.equals(RamAttributes.BUS_WITH_BYTEENABLES);
+		int NrOfByteEnables = GetNrOfByteEnables(state.getAttributeSet());
+		int ByteEnableIndex = ByteEnableIndex(state.getAttributeSet());
+		Value addrValue = state.getPortValue(ADDR);
+		int addr = addrValue.toIntValue();
+
 		/* Set the outputs in tri-state in case of combined bus */
 		if ((!separate && !outputEnabled)
 				|| (separate && asynch && !outputEnabled)) {
 			state.setPort(DATA, Value.createUnknown(dataBits), DELAY);
 		}
-		if (!triggered && !asynch && outputEnabled) {
-			state.setPort(DATA,
-					Value.createKnown(dataBits, myState.GetCurrentData()),
-					DELAY);
-		}
-		if (triggered) {
-			Object be = state.getAttributeValue(RamAttributes.ATTR_ByteEnables);
-			boolean byteEnables = be == null ? false : be
-					.equals(RamAttributes.BUS_WITH_BYTEENABLES);
-			int NrOfByteEnables = GetNrOfByteEnables(state.getAttributeSet());
-			int ByteEnableIndex = ByteEnableIndex(state.getAttributeSet());
-			boolean shouldStore = (!asynch || trigger.equals(StdAttr.TRIG_HIGH)) ? state
-					.getPortValue(WE) != Value.FALSE
-					: state.getPortValue(WE) == Value.FALSE;
-			Value addrValue = state.getPortValue(ADDR);
-			int addr = addrValue.toIntValue();
-			if (!addrValue.isFullyDefined() || addr < 0) {
-				return;
-			}
-			if (addr != myState.getCurrent()) {
-				myState.setCurrent(addr);
-				myState.scrollToShow(addr);
-			}
 
+		if (!addrValue.isFullyDefined() || addr < 0) {
+			return;
+		}
+		if (!outputEnabled && !shouldStore) {
+			if (myState.getUsed() != myState.getCurrent()) {
+				myState.setCurrent(myState.getUsed());
+				myState.scrollToShow(myState.getUsed());
+			}
+			return;
+		} else if (triggered) {
+			myState.setUsedAddr(addr);
+		}
+		if (addr != myState.getCurrent()) {
+			myState.setCurrent(addr);
+			myState.scrollToShow(addr);
+		}
+
+		if (triggered) {
 			if (shouldStore) {
 				int dataValue = state.getPortValue(
 						!separate ? DATA : (asynch) ? ADIN : SDIN).toIntValue();
@@ -821,25 +827,29 @@ public class Ram extends Mem {
 				}
 				myState.getContents().set(addr, dataValue);
 			}
-			int val = myState.getContents().get(addr);
-			int currentValue = myState.GetCurrentData();
-			if (byteEnables) {
-				int mask = 0xFF << (NrOfByteEnables - 1) * 8;
-				for (int i = 0; i < NrOfByteEnables; i++) {
-					Value bitvalue = state.getPortValue(ByteEnableIndex + i);
-					boolean disabled = bitvalue == null ? false : bitvalue
-							.equals(Value.FALSE);
-					if (disabled) {
-						val &= ~mask;
-						val |= (currentValue & mask);
-					}
-					mask >>= 8;
+		}
+
+		int val = myState.getContents().get(addr);
+		int currentValue = myState.GetCurrentData();
+		if (byteEnables) {
+			int mask = 0xFF << (NrOfByteEnables - 1) * 8;
+			for (int i = 0; i < NrOfByteEnables; i++) {
+				Value bitvalue = state.getPortValue(ByteEnableIndex + i);
+				boolean disabled = bitvalue == null ? false : bitvalue
+						.equals(Value.FALSE);
+				if (disabled) {
+					val &= ~mask;
+					val |= (currentValue & mask);
 				}
+				mask >>= 8;
 			}
-			myState.SetCurrentData(val);
-			if (outputEnabled) {
-				state.setPort(DATA, Value.createKnown(dataBits, val), DELAY);
-			}
+		}
+		myState.SetCurrentData(val);
+
+		if (outputEnabled) {
+			state.setPort(DATA,
+					Value.createKnown(dataBits, myState.GetCurrentData()),
+					DELAY);
 		}
 	}
 
