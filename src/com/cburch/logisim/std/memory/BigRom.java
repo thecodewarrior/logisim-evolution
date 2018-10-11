@@ -203,7 +203,7 @@ public class BigRom extends InstanceFactory implements SourcedComponentFactory {
 			byte[] bytes = value.toByteArray();
 			long[] words = new long[wordCount];
 			for (int w = 0; w < wordCount; w++) {
-				for (int b = 0; b < 8; b++) {
+				for (int b = 0; b < 4; b++) {
 					int i = bytes.length-1 - (w*4) - b;
 					if(i >= 0) {
 						words[w] |= (bytes[i] & 0xFF) << (b*8);
