@@ -31,6 +31,7 @@
 package com.cburch.logisim.circuit;
 
 import com.cburch.logisim.data.Direction;
+import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.util.GraphicsUtil;
 
 class SplitterParameters {
@@ -50,7 +51,7 @@ class SplitterParameters {
 
 	SplitterParameters(SplitterAttributes attrs) {
 		Object appear = attrs.appear;
-		int spacing = attrs.spacing == SplitterAttributes.SPACING_DOUBLE ? 20 : 10;
+		int spacing = attrs.spacing == StdAttr.SPACING_DOUBLE ? 20 : 10;
 		int fanout = attrs.fanout;
 		Direction facing = attrs.facing;
 

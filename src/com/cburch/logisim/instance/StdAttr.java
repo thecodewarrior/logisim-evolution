@@ -80,4 +80,12 @@ public interface StdAttr {
 			"sourcepath", Strings.getter("stdSourcePathAttr"));
 
 	public static final Attribute<String> DUMMY = Attributes.forHidden();
+
+	public static final AttributeOption SPACING_SINGLE = new AttributeOption(
+			"single", Strings.getter("stdSpacingSingle"));
+	public static final AttributeOption SPACING_DOUBLE = new AttributeOption(
+			"double", Strings.getter("stdSpacingDouble"));
+	public static final Attribute<AttributeOption> ATTR_SPACING = Attributes
+			.forOption("spacing", Strings.getter("stdSpacingAttr"),
+					new AttributeOption[] { SPACING_SINGLE, SPACING_DOUBLE });
 }
