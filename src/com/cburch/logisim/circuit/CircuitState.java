@@ -50,6 +50,8 @@ import com.cburch.logisim.instance.*;
 import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.std.wiring.Clock;
 import com.cburch.logisim.std.wiring.Pin;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 public class CircuitState implements InstanceData {
 
@@ -167,7 +169,7 @@ public class CircuitState implements InstanceData {
 
 	private CircuitWires.State wireData = null;
 	private HashMap<Component, Object> componentData = new HashMap<Component, Object>();
-	private Map<Location, Value> values = new HashMap<Location, Value>();
+	private Long2ObjectMap<Value> values = new Long2ObjectOpenHashMap<>();
 	private CopyOnWriteArraySet<Component> dirtyComponents = new CopyOnWriteArraySet<Component>();
 	private CopyOnWriteArraySet<Location> dirtyPoints = new CopyOnWriteArraySet<Location>();
 	HashMap<Location, SetData> causes = new HashMap<Location, SetData>();
@@ -195,7 +197,7 @@ public class CircuitState implements InstanceData {
 	}
 
 	public boolean containsKey(Location pt) {
-		return values.containsKey(pt);
+		return values.containsKey(pt.toLong());
 	}
 
 	private void copyFrom(CircuitState src, Propagator base) {
@@ -310,7 +312,7 @@ public class CircuitState implements InstanceData {
 	}
 
 	public Value getValue(Location pt) {
-		Value ret = values.get(pt);
+		Value ret = values.get(pt.toLong());
 		if (ret != null)
 			return ret;
 
@@ -319,7 +321,7 @@ public class CircuitState implements InstanceData {
 	}
 
 	Value getValueByWire(Location p) {
-		return values.get(p);
+		return values.get(p.toLong());
 	}
 
 	CircuitWires.State getWireData() {
@@ -482,10 +484,10 @@ public class CircuitState implements InstanceData {
 		// for CircuitWires - to set value at point
 		boolean changed;
 		if (v == Value.NIL) {
-			Object old = values.remove(p);
+			Object old = values.remove(p.toLong());
 			changed = (old != null && old != Value.NIL);
 		} else {
-			Object old = values.put(p, v);
+			Object old = values.put(p.toLong(), v);
 			changed = !v.equals(old);
 		}
 		if (changed) {

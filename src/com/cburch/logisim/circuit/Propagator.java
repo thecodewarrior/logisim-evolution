@@ -31,10 +31,7 @@
 package com.cburch.logisim.circuit;
 
 import java.lang.ref.WeakReference;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.PriorityQueue;
-import java.util.Random;
+import java.util.*;
 
 import com.cburch.logisim.comp.Component;
 import com.cburch.logisim.comp.ComponentDrawContext;
@@ -44,6 +41,7 @@ import com.cburch.logisim.data.AttributeListener;
 import com.cburch.logisim.data.Location;
 import com.cburch.logisim.data.Value;
 import com.cburch.logisim.file.Options;
+import it.unimi.dsi.fastutil.ints.*;
 
 public class Propagator {
 	private static class ComponentPoint {
@@ -162,7 +160,9 @@ public class Propagator {
 	 * within Logisim (though they wouldn't oscillate in practice).
 	 */
 	private volatile int simRandomShift;
-	private PriorityQueue<SetData> toProcess = new PriorityQueue<SetData>();
+	private Int2ObjectMap<List<SetData>> toProcess = new Int2ObjectOpenHashMap<>();
+	private IntSortedSet times = new IntAVLTreeSet();
+	private List<SetData> nextList = new ArrayList<>();
 	private int clock = 0;
 	private boolean isOscillating = false;
 	private boolean oscAdding = false;
@@ -383,8 +383,13 @@ public class Propagator {
 				}
 			}
 		}
-		toProcess.add(new SetData(clock + delay, setDataSerialNumber, state,
-				pt, cause, val));
+		times.add(clock + delay);
+		List<SetData> list = toProcess.putIfAbsent(clock + delay, nextList);
+		if(list == null) {
+		    list = nextList;
+			nextList = new ArrayList<>();
+		}
+		list.add(new SetData(clock + delay, setDataSerialNumber, state, pt, cause, val));
 		/*
 		 * DEBUGGING - comment out Simulator.log(clock + ": set " + pt + " in "
 		 * + state + " to " + val + " by " + cause + " after " + delay); //
@@ -411,15 +416,13 @@ public class Propagator {
 			return;
 
 		// update clock
-		clock = toProcess.peek().time;
+		clock = times.firstInt();
+
+		List<SetData> datas = toProcess.get(clock);
 
 		// propagate all values for this clock tick
-		HashMap<CircuitState, HashSet<ComponentPoint>> visited = new HashMap<CircuitState, HashSet<ComponentPoint>>();
-		while (true) {
-			SetData data = toProcess.peek();
-			if (data == null || data.time != clock)
-				break;
-			toProcess.remove();
+		HashMap<CircuitState, HashSet<ComponentPoint>> visited = new HashMap<>();
+		for (SetData data : datas) {
 			CircuitState state = data.state;
 
 			// if it's already handled for this clock tick, continue
@@ -453,6 +456,8 @@ public class Propagator {
 				state.markPointAsDirty(data.loc);
 			}
 		}
+		times.remove(clock);
+		toProcess.remove(clock);
 
 		clearDirtyPoints();
 		clearDirtyComponents();

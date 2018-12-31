@@ -33,6 +33,12 @@ package com.cburch.logisim.circuit;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 class WireThread {
+	private static int lastId = 0;
+	private static synchronized int getNextId() {
+		return lastId++;
+	}
+	public final int uniqueId = getNextId();
+
 	private WireThread parent;
 	private CopyOnWriteArraySet<CircuitWires.ThreadBundle> bundles = new CopyOnWriteArraySet<CircuitWires.ThreadBundle>();
 

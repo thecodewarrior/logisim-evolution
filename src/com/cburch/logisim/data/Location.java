@@ -38,6 +38,10 @@ import com.cburch.logisim.util.Cache;
  * immutable.
  */
 public class Location implements Comparable<Location> {
+	public static Location fromLong(long packed) {
+		return Location.create((int)(packed >> 32), (int)packed);
+	}
+
 	public static Location create(int x, int y) {
 		int hashCode = 31 * x + y;
 		Object ret = cache.get(hashCode);
@@ -173,5 +177,9 @@ public class Location implements Comparable<Location> {
 		if (dx == 0 && dy == 0)
 			return this;
 		return Location.create(x + dx, y + dy);
+	}
+
+	public long toLong() {
+		return (((long)x) << 32) | (y & 0xffffffffL);
 	}
 }

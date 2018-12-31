@@ -44,6 +44,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.SwingUtilities;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,7 +135,7 @@ class CircuitWires {
 
 	static class State {
 		BundleMap bundleMap;
-		HashMap<WireThread, Value> thr_values = new HashMap<WireThread, Value>();
+		Int2ObjectMap<Value> thr_values = new Int2ObjectOpenHashMap<>();
 
 		State(BundleMap bundleMap) {
 			this.bundleMap = bundleMap;
@@ -146,6 +150,12 @@ class CircuitWires {
 	}
 
 	static class ThreadBundle {
+		private static long lastId = 0;
+		private static synchronized long getNextId() {
+			return lastId++;
+		}
+		public final long uniqueId = getNextId();
+
 		int loc;
 		WireBundle b;
 
@@ -755,8 +765,7 @@ class CircuitWires {
 	//
 	void propagate(CircuitState circState, Set<Location> points) {
 		BundleMap map = getBundleMap();
-		CopyOnWriteArraySet<WireThread> dirtyThreads = new CopyOnWriteArraySet<WireThread>(); // affected
-																								// threads
+		Int2ObjectMap<WireThread> dirtyThreads = new Int2ObjectOpenHashMap<>();
 
 		// get state, or create a new one if current state is outdated
 		State s = circState.getWireData();
@@ -767,7 +776,7 @@ class CircuitWires {
 				WireThread[] th = b.threads;
 				if (b.isValid() && th != null) {
 					for (WireThread t : th) {
-						dirtyThreads.add(t);
+						dirtyThreads.put(t.uniqueId, t);
 					}
 				}
 			}
@@ -793,7 +802,7 @@ class CircuitWires {
 					}
 				} else {
 					for (WireThread t : th) {
-						dirtyThreads.add(t);
+						dirtyThreads.put(t.uniqueId, t);
 					}
 				}
 			}
@@ -803,27 +812,29 @@ class CircuitWires {
 			return;
 
 		// determine values of affected threads
-		HashSet<ThreadBundle> bundles = new HashSet<ThreadBundle>();
-		for (WireThread t : dirtyThreads) {
+		Long2ObjectMap<ThreadBundle> bundles = new Long2ObjectOpenHashMap<>();
+		for (WireThread t : dirtyThreads.values()) {
 			Value v = getThreadValue(circState, t);
-			s.thr_values.put(t, v);
-			bundles.addAll(t.getBundles());
+			s.thr_values.put(t.uniqueId, v);
+			for(ThreadBundle bundle : t.getBundles()) {
+				bundles.put(bundle.uniqueId, bundle);
+			}
 		}
 
 		// now propagate values through circuit
-		for (ThreadBundle tb : bundles) {
+		for (ThreadBundle tb : bundles.values()) {
 			WireBundle b = tb.b;
 
 			Value bv = null;
 			if (!b.isValid() || b.threads == null) {
 				; // do nothing
 			} else if (b.threads.length == 1) {
-				bv = s.thr_values.get(b.threads[0]);
+				bv = s.thr_values.get(b.threads[0].uniqueId);
 			} else {
 				Value[] tvs = new Value[b.threads.length];
 				boolean tvs_valid = true;
 				for (int i = 0; i < tvs.length; i++) {
-					Value tv = s.thr_values.get(b.threads[i]);
+					Value tv = s.thr_values.get(b.threads[i].uniqueId);
 					if (tv == null) {
 						tvs_valid = false;
 						break;
