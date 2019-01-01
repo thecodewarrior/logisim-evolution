@@ -52,11 +52,6 @@ public class RegisterBank extends InstanceFactory {
 		g.drawText("R", GraphicsRenderer.H_LEFT, GraphicsRenderer.V_CENTER);
 		g.run("m -5,-10");
 
-        for (int i = 0; i < ports.registerCount; i++) {
-            g.moveAbsolute(10, 30+40*i);
-            drawRegister(g, data.getValues()[i], true);
-        }
-
 		for (int i = 0; i < ports.portCount; i++) {
 			Value address = painter.getPortValue(ports.portIndex(i, ADDRESS));
 			g.moveAbsolute(10, -40 -60*i);
@@ -144,11 +139,9 @@ public class RegisterBank extends InstanceFactory {
 
     @Override
     public Bounds getOffsetBounds(AttributeSet attrs) {
-        int registers = attrs.getValue(ATTR_REGISTER_COUNT);
 		int ports = attrs.getValue(ATTR_PORT_COUNT);
-		int registerHeight = registers * 40;
 		int portHeight = ports * 60;
-        return Bounds.create(-10, -portHeight, 110, 30 + portHeight + registerHeight);
+        return Bounds.create(-10, -portHeight, 110, 30 + portHeight);
     }
 
     @Override
@@ -203,16 +196,6 @@ public class RegisterBank extends InstanceFactory {
 			}
 		}
 
-        for (int i = 0; i < registerCount; i++) {
-            Value newValue = data.getValues()[i];
-            if (isReset || state.getPortValue(ports.registerIndex(i, RESET)) == Value.TRUE) {
-                newValue = Value.createKnown(dataWidth, 0);
-            } else if (triggered && state.getPortValue(ports.registerIndex(i, WRITE_ENABLE)) == Value.TRUE) {
-                newValue = state.getPortValue(ports.registerIndex(i, INPUT));
-            }
-			data.getValues()[i] = newValue;
-        }
-
         // now that everything has been updated, push those values to the outputs
 		for (int i = 0; i < portCount; i++) {
 			Value addressValue = state.getPortValue(ports.portIndex(i, ADDRESS));
@@ -238,16 +221,6 @@ public class RegisterBank extends InstanceFactory {
 				state.setPort(ports.portIndex(i, OUTPUT), Value.createUnknown(dataWidth), DELAY);
 				state.setPort(ports.portIndex(i, VALUE), Value.createUnknown(dataWidth), DELAY);
 			}
-		}
-
-		for (int i = 0; i < registerCount; i++) {
-			Value storedValue = data.getValues()[i];
-			if (state.getPortValue(ports.registerIndex(i, READ_ENABLE)) != Value.FALSE) {
-				state.setPort(ports.registerIndex(i, OUTPUT), storedValue, DELAY);
-			} else {
-				state.setPort(ports.registerIndex(i, OUTPUT), Value.createUnknown(dataWidth), DELAY);
-			}
-			state.setPort(ports.registerIndex(i, VALUE), storedValue, DELAY);
 		}
 
 	}
@@ -283,13 +256,12 @@ public class RegisterBank extends InstanceFactory {
 	    int registerCount, portCount;
 
 	    public RegisterBlockPorts(int registerCount, int portCount) {
-	    	this.registerCount = registerCount;
 	    	this.portCount = portCount;
+			this.registerCount = registerCount;
 		}
 
 		int size() {
 	    	return 2 +
-					registerCount * PortType.registerTypes.length +
 					portCount * PortType.portTypes.length;
 		}
 
@@ -300,7 +272,6 @@ public class RegisterBank extends InstanceFactory {
 
 		int portIndex(int i, PortType type) {
 			return 2 +
-					PortType.registerTypes.length * registerCount +
 					PortType.portTypes.length * i + type.ordinal();
 		}
 
@@ -310,22 +281,6 @@ public class RegisterBank extends InstanceFactory {
 					Strings.getter("registerBankClockTooltip"));
 			ports[1] = setTooltip(new Port(-10, 10, Port.INPUT, 1),
 					Strings.getter("registerBankGlobalResetTooltip"));
-
-			for (int i = 0; i < registerCount; i++) {
-				int y = 30+40*i;
-				ports[registerIndex(i, WRITE_ENABLE)] = setTooltip(new Port(  0, y+10, Port.INPUT, 1),
-						Strings.getter("registerBankWriteEnableTooltip"));
-				ports[registerIndex(i, READ_ENABLE )] = setTooltip(new Port(100, y+10, Port.INPUT, 1),
-						Strings.getter("registerBankReadEnableTooltip"));
-				ports[registerIndex(i, RESET       )] = setTooltip(new Port( 10, y+20, Port.INPUT, 1),
-						Strings.getter("registerBankResetTooltip"));
-				ports[registerIndex(i, INPUT       )] = setTooltip(new Port(  0, y+30, Port.INPUT, StdAttr.WIDTH),
-						Strings.getter("registerBankInputTooltip"));
-				ports[registerIndex(i, OUTPUT      )] = setTooltip(new Port(100, y+30, Port.OUTPUT, StdAttr.WIDTH),
-						Strings.getter("registerBankOutputTooltip"));
-				ports[registerIndex(i, VALUE       )] = setTooltip(new Port( 90, y+20, Port.OUTPUT, StdAttr.WIDTH),
-						Strings.getter("registerBankValueTooltip"));
-			}
 
 			for (int i = 0; i < portCount; i++) {
 				int y = -40 -60*i;
